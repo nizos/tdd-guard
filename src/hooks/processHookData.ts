@@ -8,6 +8,8 @@ import { HookDataSchema, HookData, isTodoWriteOperation, ToolOperationSchema } f
 import { PostToolLintHandler } from './postToolLint'
 import { LintDataSchema } from '../contracts/schemas/lintSchemas'
 import { TestResultSchema, isTestPassing } from '../contracts/schemas/vitestSchemas'
+import { PytestResultSchema } from '../contracts/schemas/pytestSchemas'
+import { detectFileType } from './fileTypeDetection'
 import { LinterProvider } from '../providers/LinterProvider'
 
 export interface ProcessHookDataDeps {
@@ -52,13 +54,13 @@ export async function processHookData(
 
   // For PreToolUse, check if we should notify about lint issues
   if (hookResult.data.hook_event_name === 'PreToolUse') {
-    const lintNotification = await checkLintNotification(storage)
+    const lintNotification = await checkLintNotification(storage, hookResult.data)
     if (lintNotification.decision === 'block') {
       return lintNotification
     }
   }
 
-  return await performValidation(deps)
+  return await performValidation(deps, hookResult.data)
 }
 
 async function processHookEvent(parsedData: unknown, storage?: Storage): Promise<void> {
@@ -77,23 +79,28 @@ function shouldSkipValidation(hookData: HookData): boolean {
   return !operationResult.success || isTodoWriteOperation(operationResult.data)
 }
 
-async function performValidation(deps: ProcessHookDataDeps): Promise<ValidationResult> {
+async function performValidation(deps: ProcessHookDataDeps, hookData?: unknown): Promise<ValidationResult> {
   if (deps.validator && deps.storage) {
-    const context = await buildContext(deps.storage)
+    const context = await buildContext(deps.storage, hookData)
     return await deps.validator(context)
   }
   
   return defaultResult
 }
 
-async function checkLintNotification(storage: Storage): Promise<ValidationResult> {
+async function checkLintNotification(storage: Storage, hookData: HookData): Promise<ValidationResult> {
   // Get test results to check if tests are passing
   let testsPassing = false
   try {
     const testStr = await storage.getTest()
     if (testStr) {
-      const testResult = TestResultSchema.parse(JSON.parse(testStr))
-      testsPassing = isTestPassing(testResult)
+      const fileType = detectFileType(hookData)
+      const testResult = fileType === 'python' 
+        ? PytestResultSchema.safeParse(JSON.parse(testStr))
+        : TestResultSchema.safeParse(JSON.parse(testStr))
+      if (testResult.success) {
+        testsPassing = isTestPassing(testResult.data)
+      }
     }
   } catch {
     testsPassing = false

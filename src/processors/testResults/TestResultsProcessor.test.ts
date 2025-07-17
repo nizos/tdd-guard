@@ -99,6 +99,35 @@ describe('TestResultsProcessor', () => {
       expect(result).toBe(expected)
     })
   })
+
+  it('should handle pytest format with passing tests', () => {
+    const processor = new TestResultsProcessor()
+    const pytestResults = {
+      testModules: [
+        {
+          moduleId: 'test_example.py',
+          tests: [
+            {
+              name: 'test_addition',
+              fullName: 'test_example.py::test_addition',
+              state: 'passed',
+            },
+          ],
+        },
+      ],
+    }
+
+    const result = processor.process(JSON.stringify(pytestResults))
+
+    const expected = ` ✓ test_example.py (1 tests) 0ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+`
+
+    expect(result).toBe(expected)
+  })
+
   describe('formats unhandled errors separately from test results', () => {
     let processor: TestResultsProcessor
     let result: string

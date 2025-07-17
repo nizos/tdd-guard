@@ -14,6 +14,7 @@ import {
   formatLintDataForContext,
   ProcessedLintData,
 } from '../../processors/lintProcessor'
+import { detectFileType } from '../../hooks/fileTypeDetection'
 
 // Import core prompts (always included)
 import { ROLE_AND_CONTEXT } from '../prompts/role-and-context'
@@ -44,7 +45,7 @@ export function generateDynamicContext(context: Context): string {
     formatOperation(operation),
 
     // 4. Additional context
-    context.test ? formatTestOutput(context.test) : '',
+    formatTestOutput(context.test ?? '', operation),
     context.todo ? formatTodoList(context.todo) : '',
     context.lint ? formatLintOutput(context.lint) : '',
 
@@ -163,9 +164,28 @@ function formatEdit(
   ].join('')
 }
 
-function formatTestOutput(testOutput: string): string {
+function formatTestOutput(
+  testOutput: string,
+  operation: ToolOperation
+): string {
+  // Handle empty or missing test output
+  if (!testOutput || testOutput.trim() === '') {
+    return [
+      '\n### Test Output\n',
+      TEST_OUTPUT_DESCRIPTION,
+      '\n```\n',
+      'No test output available. Tests must be run before implementing.',
+      '\n```\n',
+    ].join('')
+  }
+
   const processor = new TestResultsProcessor()
-  const formattedOutput = processor.process(testOutput)
+
+  // Use existing file type detection
+  const fileType = detectFileType({ tool_input: operation.tool_input })
+  const framework = fileType === 'python' ? 'pytest' : 'vitest'
+
+  const formattedOutput = processor.process(testOutput, framework)
 
   return [
     '\n### Test Output\n',

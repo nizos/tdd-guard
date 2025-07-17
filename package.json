@@ -12,7 +12,9 @@
     "tdd",
     "test-driven-development",
     "claude",
-    "vitest"
+    "vitest",
+    "pytest",
+    "python"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -42,7 +44,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.56.0",
+    "@types/uuid": "^10.0.0",
     "dotenv": "^17.1.0",
+    "uuid": "^11.1.0",
     "zod": "^3.25.74"
   },
   "lint-staged": {

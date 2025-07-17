@@ -1,0 +1,16 @@
+{
+  "session_id": "5f715e66-7d42-46dd-8d02-b753d660fb06",
+  "transcript_path": "/Users/Duracula 1/.claude/projects/-Users-Duracula-1-Python-Projects-tdd-guard--claude/5f715e66-7d42-46dd-8d02-b753d660fb06.jsonl",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "TodoWrite",
+  "tool_input": {
+    "todos": [
+      {
+        "content": "Analyze the code change for TDD compliance",
+        "status": "in_progress",
+        "priority": "high",
+        "id": "1"
+      }
+    ]
+  }
+}

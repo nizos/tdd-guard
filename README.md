@@ -28,12 +28,23 @@ The tool intercepts Write, Edit, and MultiEdit operations before execution, exam
 ## Requirements
 
 - **Node.js**: Version 18 or higher
-- **Vitest**: Test runner (required)
+- **Test Runner**: Vitest (JavaScript/TypeScript) or pytest (Python)
+- **ESLint**: Latest version recommended for refactoring phase support
 
 ## Installation
 
+### For JavaScript/TypeScript Projects
+
 ```bash
 npm install --save-dev tdd-guard
+```
+
+### For Python Projects
+
+```bash
+git clone https://github.com/nizos/tdd-guard
+cd tdd-guard
+pip install -e .
 ```
 
 ## Quick Start
@@ -46,7 +57,7 @@ If you do not have Claude installed locally, create a `.env` file:
 USE_SYSTEM_CLAUDE=true
 ```
 
-This tells TDD Guard to the System Claude from PATH instead of `~/.claude/local/claude`.
+This tells TDD Guard to use System Claude from PATH instead of `~/.claude/local/claude`.
 
 ### 2. Hook Setup
 
@@ -62,6 +73,8 @@ Configure TDD Guard using the `/hooks` command:
 
 ### 3. Test Reporter
 
+#### For JavaScript/TypeScript (Vitest)
+
 Add the TDD Guard reporter to your `vitest.config.ts`:
 
 ```typescript
@@ -74,7 +87,17 @@ export default defineConfig({
 })
 ```
 
-Make sure your `package.json` test scripts are configured to use Vitest.
+#### For Python (pytest)
+
+The TDD Guard plugin is automatically discovered when the package is installed. Simply run:
+
+```bash
+pytest
+```
+
+The plugin will automatically capture test results for TDD validation.
+
+Make sure your test scripts are configured to use your chosen test runner.
 
 For troubleshooting and configuration options, see the [Configuration Guide](docs/CONFIGURATION.md).
 
@@ -91,7 +114,6 @@ TDD Guard runs with your user permissions and has access to your file system. We
 ## Known Limitations
 
 - Not tested with multiple subagents working simultaneously
-- Test output context only available for Vitest
 
 ## Roadmap
 

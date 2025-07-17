@@ -1,13 +1,14 @@
 import {
-  TestResultSchema,
+  TestResultSchema as VitestTestResultSchema,
   TestResult,
   isFailingTest,
   isPassingTest,
 } from '../../contracts/schemas/vitestSchemas'
+import { PytestResultSchema } from '../../contracts/schemas/pytestSchemas'
 
 export class TestResultsProcessor {
-  process(jsonData: string): string {
-    const parseResult = this.parseAndValidate(jsonData)
+  process(jsonData: string, framework: 'vitest' | 'pytest' = 'vitest'): string {
+    const parseResult = this.parseAndValidate(jsonData, framework)
     if (!parseResult.success) {
       return parseResult.error
     }
@@ -205,14 +206,17 @@ export class TestResultsProcessor {
   }
 
   private parseAndValidate(
-    jsonData: string
+    jsonData: string,
+    framework: 'vitest' | 'pytest'
   ): { success: true; data: TestResult } | { success: false; error: string } {
     const parsed = this.parseJson(jsonData)
     if (!parsed.success) {
       return parsed
     }
 
-    const result = TestResultSchema.safeParse(parsed.data)
+    const schema =
+      framework === 'pytest' ? PytestResultSchema : VitestTestResultSchema
+    const result = schema.safeParse(parsed.data)
     if (!result.success) {
       return { success: false, error: this.getValidationError(parsed.data) }
     }
@@ -224,8 +228,13 @@ export class TestResultsProcessor {
     jsonData: string
   ): { success: true; data: unknown } | { success: false; error: string } {
     try {
-      const data = JSON.parse(jsonData)
-      return { success: true, data }
+      const firstParse = JSON.parse(jsonData)
+      // Handle double-encoded JSON (common in both Vitest and pytest reporters)
+      if (typeof firstParse === 'string') {
+        const data = JSON.parse(firstParse)
+        return { success: true, data }
+      }
+      return { success: true, data: firstParse }
     } catch {
       return { success: false, error: 'Invalid JSON format.' }
     }

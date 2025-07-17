@@ -40,6 +40,7 @@ export class ClaudeCli implements IModelClient {
 
     // Parse the Claude CLI response and extract the result field
     const response = JSON.parse(output)
+
     return response.result
   }
 }
