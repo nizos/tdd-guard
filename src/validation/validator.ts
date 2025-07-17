@@ -41,9 +41,7 @@ function parseModelResponse(response: string): ValidationResult {
 function extractJsonString(response: string): string {
   // Handle undefined/null responses
   if (!response) {
-    throw new Error(
-      `No response from model. Response type: ${typeof response}, value: ${JSON.stringify(response)}`
-    )
+    throw new Error('No response from model')
   }
 
   const jsonFromCodeBlock = extractFromJsonCodeBlock(response)
