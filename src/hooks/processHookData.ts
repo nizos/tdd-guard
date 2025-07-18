@@ -76,7 +76,24 @@ function shouldSkipValidation(hookData: HookData): boolean {
     tool_input: hookData.tool_input,
   })
 
-  return !operationResult.success || isTodoWriteOperation(operationResult.data)
+  if (!operationResult.success || isTodoWriteOperation(operationResult.data)) {
+    return true
+  }
+
+  // Skip validation for non-code files
+  const toolInput = hookData.tool_input
+  if (toolInput && typeof toolInput === 'object' && 'file_path' in toolInput) {
+    const filePath = toolInput.file_path
+    if (typeof filePath === 'string') {
+      const nonCodeExtensions = ['.md', '.txt', '.log', '.json', '.yml', '.yaml', '.xml', '.html', '.css', '.rst']
+      const fileExt = filePath.toLowerCase().slice(filePath.lastIndexOf('.'))
+      if (nonCodeExtensions.includes(fileExt)) {
+        return true
+      }
+    }
+  }
+
+  return false
 }
 
 async function performValidation(deps: ProcessHookDataDeps, hookData?: unknown): Promise<ValidationResult> {

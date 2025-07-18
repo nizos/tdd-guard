@@ -140,6 +140,24 @@ describe('processHookData', () => {
     })
   })
 
+  describe('Non-code file filtering', () => {
+    it('should skip validation for markdown files', async () => {
+      const markdownFileData = {
+        ...EDIT_HOOK_DATA,
+        tool_input: {
+          file_path: '/path/to/README.md',
+          old_string: 'old content',
+          new_string: 'new content'
+        }
+      }
+
+      const result = await sut.process(markdownFileData)
+
+      expect(sut.validatorHasBeenCalled()).toBe(false)
+      expect(result).toEqual(defaultResult)
+    })
+  })
+
   describe('PreToolUse lint notification', () => {
     it('should block when tests pass, lint issues exist, and not yet notified', async () => {
       // Setup: passing tests
@@ -278,5 +296,6 @@ function createTestProcessor() {
     // Validator checks
     validatorHasBeenCalled: (): boolean => mockValidator.mock.calls.length > 0,
     getValidatorCallArgs: (): Context | null => mockValidator.mock.calls[0]?.[0] ?? null,
+    resetValidatorMock: (): void => mockValidator.mockClear(),
   }
 }
