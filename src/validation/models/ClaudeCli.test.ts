@@ -34,7 +34,7 @@ describe('ClaudeCli', () => {
         '--output-format',
         'json',
         '--max-turns',
-        '1',
+        '2',
         '--model',
         'sonnet',
       ])
