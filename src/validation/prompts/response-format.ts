@@ -24,7 +24,7 @@ When blocking, your reason must:
 - "Multiple test addition violation - adding 2 new tests simultaneously. Write and run only ONE test at a time to maintain TDD discipline."
 - "Over-implementation violation. Test fails with 'Calculator is not defined' but implementation adds both class AND method. Create only an empty class first, then run test again."
 - "Refactoring without passing tests. Test output shows failures. Fix failing tests first, ensure all pass, then refactor."
-- "Premature implementation - no test output available. Run the failing test first before implementing."
+- "Premature implementation - no test output available. Write the failing test first, run it with vitest/pytest to see it fail, then create the minimal implementation."
 
 #### Example Approval Reasons:
 - "Adding single test to test file - follows TDD red phase"
