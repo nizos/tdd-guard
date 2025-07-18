@@ -50,6 +50,14 @@ export class FileStorage implements Storage {
   }
 
   async getTest(): Promise<string | null> {
+    try {
+      const stats = await fs.stat(this.filePaths.test)
+      const ageMs = Date.now() - stats.mtime.getTime()
+      const TWENTY_MINUTES_MS = 1200000 // 20 minutes in milliseconds
+      if (ageMs > TWENTY_MINUTES_MS) return null
+    } catch {
+      return null
+    }
     return this.get('test')
   }
 
