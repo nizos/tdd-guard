@@ -23,7 +23,7 @@ TDD Guard monitors file operations in real-time and blocks any changes that viol
 
 - **Focus on solving problems** - TDD Guard enforces the rules while you design solutions
 - **Save context for what matters** - No more TDD instructions cluttering your CLAUDE.md
-- **Works with your stack** - TypeScript, JavaScript, and Python today. More languages coming soon
+- **Works with your stack** - TypeScript, JavaScript, Python, and PHP today. More languages coming soon
 - **Control without context switches** - Toggle with `tdd-guard on/off` mid-session
 - **Flexible validation** - Use local Claude or configure Anthropic API
 
@@ -33,6 +33,7 @@ TDD Guard monitors file operations in real-time and blocks any changes that viol
 - Test Runner:
   - JavaScript/TypeScript: Vitest
   - Python: pytest
+  - PHP: PHPUnit 9.x, 10.x, 11.x, or 12.x
 
 ## Quick Start
 
@@ -95,6 +96,41 @@ tdd_guard_project_root = "/Users/username/projects/my-app"
 
 </details>
 
+<details>
+<summary><b>PHP (PHPUnit)</b></summary>
+
+Install the tdd-guard/phpunit reporter in your project:
+
+```bash
+composer require --dev tdd-guard/phpunit
+```
+
+For PHPUnit 9.x, add to your `phpunit.xml`:
+
+```xml
+<listeners>
+    <listener class="TddGuard\PHPUnit\TddGuardListener">
+        <arguments>
+            <string>/Users/username/projects/my-app</string>
+        </arguments>
+    </listener>
+</listeners>
+```
+
+For PHPUnit 10.x/11.x/12.x, add to your `phpunit.xml`:
+
+```xml
+<extensions>
+    <bootstrap class="TddGuard\PHPUnit\TddGuardExtension">
+        <parameter name="projectRoot" value="/Users/username/projects/my-app"/>
+    </bootstrap>
+</extensions>
+```
+
+**Note:** Specify the project root path when your phpunit.xml is not at the project root (e.g., in subdirectories or monorepos). This ensures TDD Guard can find the test results. The reporter saves results to `.claude/tdd-guard/data/test.json`.
+
+</details>
+
 ### 3. Configure Claude Code Hook
 
 Use the `/hooks` command in Claude Code:
@@ -137,6 +173,7 @@ Contributions are welcome! Feel free to submit issues and pull requests.
 **Contributors:**
 
 - Python/pytest support: [@Durafen](https://github.com/Durafen)
+- PHP/PHPUnit support: [@wazum](https://github.com/wazum)
 
 ## Learn More
 

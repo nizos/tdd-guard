@@ -57,6 +57,7 @@ function filterTestByFramework(testData: string, hookData: unknown): string {
     const hookDataTyped = hookData as { tool_input?: { file_path?: string } }
     const operationFile = hookDataTyped.tool_input?.file_path ?? ''
     const isPythonOperation = operationFile.endsWith('.py')
+    const isPhpOperation = operationFile.endsWith('.php')
 
     // Parse test data to filter modules
     const firstParse: unknown = JSON.parse(testData)
@@ -79,9 +80,21 @@ function filterTestByFramework(testData: string, hookData: unknown): string {
       const isTypeScriptModule =
         moduleFile.includes('.test.ts') || moduleFile.includes('.test.js')
       const isPythonModule = moduleFile.endsWith('.py') && !isTypeScriptModule
+      const isPhpModule =
+        moduleFile.endsWith('.php') &&
+        (moduleFile.includes('Test.php') ||
+          moduleFile.includes('test.php') ||
+          moduleFile.includes('/test/') ||
+          moduleFile.includes('/tests/'))
 
       // Return only modules matching the operation type
-      return isPythonOperation ? isPythonModule : isTypeScriptModule
+      if (isPythonOperation) {
+        return isPythonModule
+      }
+      if (isPhpOperation) {
+        return isPhpModule
+      }
+      return isTypeScriptModule
     })
 
     // Return filtered results in same format
