@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="3"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="true"
+    findUnusedCode="false"
+>
+    <projectFiles>
+        <directory name="src" />
+        <directory name="tests" />
+        <ignoreFiles>
+            <directory name="vendor" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+        <!-- Suppress for test files only -->
+        <PropertyNotSetInConstructor>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </PropertyNotSetInConstructor>
+        <MissingConstructor>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </MissingConstructor>
+        <UnusedClass>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </UnusedClass>
+        
+        <!-- PHPUnit 9.x compatibility - TestListener interface was removed in PHPUnit 10 -->
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="PHPUnit\Framework\TestListener" />
+            </errorLevel>
+        </UndefinedClass>
+    </issueHandlers>
+</psalm>

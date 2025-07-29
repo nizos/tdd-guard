@@ -1,0 +1,9 @@
+/vendor/
+/composer.lock
+/.phpunit.result.cache
+/.phpunit.cache/
+/coverage/
+/.claude/
+*.log
+.php-cs-fixer.cache
+.psalm-cache/

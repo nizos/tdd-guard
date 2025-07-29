@@ -24,11 +24,25 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+
+      - name: Install npm dependencies
         run: npm ci
 
-      - name: Check formatting
+      - name: Install PHP dependencies
+        working-directory: reporters/phpunit
+        run: composer install --no-progress --no-suggest
+
+      - name: Check JavaScript/TypeScript formatting
         run: npm run format:check
+
+      - name: Check PHP formatting
+        working-directory: reporters/phpunit
+        run: composer run format:check
 
   lint:
     runs-on: ubuntu-latest
@@ -43,11 +57,25 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+
+      - name: Install npm dependencies
         run: npm ci
 
-      - name: Run linter
+      - name: Install PHP dependencies
+        working-directory: reporters/phpunit
+        run: composer install --no-progress --no-suggest
+
+      - name: Run JavaScript/TypeScript linter
         run: npm run lint:check
+
+      - name: Run PHP linter
+        working-directory: reporters/phpunit
+        run: composer run lint:check
 
   typecheck:
     runs-on: ubuntu-latest

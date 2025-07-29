@@ -3,8 +3,8 @@ dist/
 coverage/
 package-lock.json
 .git/
-*.min.js
-*.min.css
+**/*.min.js
+**/*.min.css
 build/
 .next/
 out/
@@ -12,3 +12,4 @@ out/
 public/
 hooks/
 test/artifacts/
+reporters/phpunit/

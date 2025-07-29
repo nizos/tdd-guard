@@ -131,6 +131,7 @@ export default [
       'test/artifacts/**',
       '.venv/**',
       'reporters/pytest/**',
+      'reporters/phpunit/**',
       '**/*.d.ts',
       '**/*.tsbuildinfo',
     ],

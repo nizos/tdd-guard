@@ -1,0 +1,54 @@
+{
+    "name": "tdd-guard/phpunit",
+    "description": "PHPUnit reporter for TDD Guard",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Wolfgang Klinger",
+            "email": "hello@wolfgang-klinger.dev"
+        }
+    ],
+    "keywords": [
+        "tdd",
+        "test-driven-development",
+        "testing",
+        "phpunit",
+        "claude"
+    ],
+    "homepage": "https://github.com/nizos/tdd-guard",
+    "support": {
+        "issues": "https://github.com/nizos/tdd-guard/issues",
+        "source": "https://github.com/nizos/tdd-guard/tree/main/reporters/phpunit"
+    },
+    "require": {
+        "php": ">=8.1",
+        "phpunit/phpunit": "^9.0 || ^10.0 || ^11.0"
+    },
+    "require-dev": {
+        "symfony/filesystem": "^5.4 || ^6.0 || ^7.0",
+        "friendsofphp/php-cs-fixer": "^3.40",
+        "vimeo/psalm": "^5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TddGuard\\PHPUnit\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TddGuard\\PHPUnit\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test:coverage": "vendor/bin/phpunit --coverage-text",
+        "format": "vendor/bin/php-cs-fixer fix",
+        "format:check": "vendor/bin/php-cs-fixer fix --dry-run --diff",
+        "lint": "vendor/bin/psalm",
+        "lint:check": "vendor/bin/psalm --no-progress"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
