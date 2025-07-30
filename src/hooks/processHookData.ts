@@ -26,11 +26,39 @@ export const defaultResult: ValidationResult = {
   reason: '',
 }
 
+const NON_CODE_EXTENSIONS = ['.md', '.txt', '.log', '.json', '.yml', '.yaml', '.xml', '.html', '.css', '.rst']
+
+function isNonCodeFile(parsedData: unknown): boolean {
+  if (!parsedData || typeof parsedData !== 'object') {
+    return false
+  }
+  
+  const data = parsedData as Record<string, unknown>
+  const toolInput = data.tool_input
+  
+  if (!toolInput || typeof toolInput !== 'object' || !('file_path' in toolInput)) {
+    return false
+  }
+  
+  const filePath = (toolInput as Record<string, unknown>).file_path
+  if (typeof filePath !== 'string') {
+    return false
+  }
+  
+  const fileExt = filePath.toLowerCase().slice(filePath.lastIndexOf('.'))
+  return NON_CODE_EXTENSIONS.includes(fileExt)
+}
+
 export async function processHookData(
   inputData: string,
   deps: ProcessHookDataDeps = {}
 ): Promise<ValidationResult> {
   const parsedData = JSON.parse(inputData)
+  
+  // Skip validation for non-code files early
+  if (isNonCodeFile(parsedData)) {
+    return defaultResult
+  }
   
   // Initialize dependencies
   const storage = deps.storage ?? new FileStorage()
@@ -102,24 +130,7 @@ function shouldSkipValidation(hookData: HookData): boolean {
     tool_input: hookData.tool_input,
   })
 
-  if (!operationResult.success || isTodoWriteOperation(operationResult.data)) {
-    return true
-  }
-
-  // Skip validation for non-code files
-  const toolInput = hookData.tool_input
-  if (toolInput && typeof toolInput === 'object' && 'file_path' in toolInput) {
-    const filePath = toolInput.file_path
-    if (typeof filePath === 'string') {
-      const nonCodeExtensions = ['.md', '.txt', '.log', '.json', '.yml', '.yaml', '.xml', '.html', '.css', '.rst']
-      const fileExt = filePath.toLowerCase().slice(filePath.lastIndexOf('.'))
-      if (nonCodeExtensions.includes(fileExt)) {
-        return true
-      }
-    }
-  }
-
-  return false
+  return !operationResult.success || isTodoWriteOperation(operationResult.data)
 }
 
 async function performValidation(deps: ProcessHookDataDeps, hookData?: unknown): Promise<ValidationResult> {

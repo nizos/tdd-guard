@@ -143,20 +143,24 @@ describe('processHookData', () => {
   })
 
   describe('Non-code file filtering', () => {
-    it('should skip validation for markdown files', async () => {
-      const markdownFileData = {
-        ...EDIT_HOOK_DATA,
-        tool_input: {
-          file_path: '/path/to/README.md',
-          old_string: 'old content',
-          new_string: 'new content'
+    it('should skip validation for various non-code file types', async () => {
+      const nonCodeExtensions = ['.md', '.txt', '.log', '.json', '.yml', '.yaml', '.xml', '.html', '.css', '.rst']
+      
+      for (const ext of nonCodeExtensions) {
+        const nonCodeFileData = {
+          ...EDIT_HOOK_DATA,
+          tool_input: {
+            file_path: `/path/to/file${ext}`,
+            old_string: 'old content',
+            new_string: 'new content'
+          }
         }
+
+        const result = await sut.process(nonCodeFileData)
+        
+        expect(sut.validatorHasBeenCalled()).toBe(false)
+        expect(result).toEqual(defaultResult)
       }
-
-      const result = await sut.process(markdownFileData)
-
-      expect(sut.validatorHasBeenCalled()).toBe(false)
-      expect(result).toEqual(defaultResult)
     })
   })
 
