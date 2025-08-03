@@ -29,4 +29,32 @@ describe('ModelClientProvider', () => {
 
     expect(client).toBeInstanceOf(ClaudeCli) // Default modelType is 'claude_cli'
   })
+
+  test('passes config with API key to AnthropicApi client', () => {
+    const config = new Config({
+      modelType: 'anthropic_api',
+      anthropicApiKey: 'test-api-key-123',
+    })
+
+    const provider = new ModelClientProvider()
+    const client = provider.getModelClient(config)
+
+    expect(client).toBeInstanceOf(AnthropicApi)
+    expect((client as AnthropicApi).config.anthropicApiKey).toBe(
+      'test-api-key-123'
+    )
+  })
+
+  test('passes config with useSystemClaude to ClaudeCli client', () => {
+    const config = new Config({
+      modelType: 'claude_cli',
+      useSystemClaude: true,
+    })
+
+    const provider = new ModelClientProvider()
+    const client = provider.getModelClient(config)
+
+    expect(client).toBeInstanceOf(ClaudeCli)
+    expect((client as ClaudeCli).config.useSystemClaude).toBe(true)
+  })
 })

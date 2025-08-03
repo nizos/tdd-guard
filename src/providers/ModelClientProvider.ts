@@ -8,8 +8,8 @@ export class ModelClientProvider {
     const actualConfig = config ?? new Config()
 
     if (actualConfig.modelType === 'anthropic_api') {
-      return new AnthropicApi()
+      return new AnthropicApi(actualConfig)
     }
-    return new ClaudeCli()
+    return new ClaudeCli(actualConfig)
   }
 }
