@@ -184,6 +184,32 @@ Use the `/hooks` command in Claude Code:
 - [Session clearing](docs/session-clearing.md) for automatic cleanup on new sessions
 - [ESLint integration](docs/linting.md) for automated refactoring support
 
+### 4. Configure AI Model (optional)
+
+TDD Guard supports two AI models for validation:
+
+#### Claude Code CLI (default)
+
+Uses your existing Claude Code authentication. No additional setup required.
+
+#### Anthropic HTTP API
+
+Direct API access provides faster validation.
+
+**Setup:**
+
+1. Get an Anthropic API key from [console.anthropic.com](https://console.anthropic.com/)
+   - **Note:** This is separate from Claude Code and requires Anthropic API credits
+   - Uses token-based billing instead of Claude Code subscription
+2. Set environment variables:
+
+```bash
+export TDD_GUARD_ANTHROPIC_API_KEY=your_api_key_here
+export MODEL_TYPE=anthropic_api
+```
+
+**Note:** TDD Guard uses the `TDD_GUARD_ANTHROPIC_API_KEY` environment variable (not the standard `ANTHROPIC_API_KEY`) to avoid conflicts with other Anthropic SDK usage in your project.
+
 ## Security Notice
 
 As stated in the [Claude Code Hooks documentation](https://docs.anthropic.com/en/docs/claude-code/hooks#security-considerations):
