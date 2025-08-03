@@ -1,6 +1,6 @@
 {
   "name": "tdd-guard-jest",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Jest reporter for TDD Guard",
   "author": "Nizar Selander",
   "license": "MIT",
