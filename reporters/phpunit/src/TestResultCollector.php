@@ -82,10 +82,15 @@ final class TestResultCollector
                     'tests' => [],
                 ];
             }
-            $modules[$moduleId]['tests'][] = $item['test'];
 
-            // Check if any test failed
-            if ($item['test']['state'] === 'failed' || $item['test']['state'] === 'errored') {
+            // Normalize 'errored' to 'failed'
+            $test = $item['test'];
+            if ($test['state'] === 'errored') {
+                $test['state'] = 'failed';
+            }
+            $modules[$moduleId]['tests'][] = $test;
+
+            if ($test['state'] === 'failed') {
                 $hasFailures = true;
             }
         }

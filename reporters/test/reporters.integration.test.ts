@@ -261,7 +261,7 @@ describe('Reporters', () => {
       }> = [
         { name: 'jest', expected: 'failed' },
         { name: 'vitest', expected: undefined },
-        { name: 'phpunit', expected: 'errored' },
+        { name: 'phpunit', expected: 'failed' },
         { name: 'pytest', expected: 'failed' },
       ]
 
