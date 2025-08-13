@@ -19,6 +19,43 @@ TDD Guard ensures Claude Code follows Test-Driven Development principles. When y
   <em>Click to watch TDD Guard in action</em>
 </p>
 
+## What is Test-Driven Development?
+
+**Test-Driven Development (TDD)** follows a simple three-step cycle:
+
+1. **🔴 Red**: Write one failing test function
+2. **🟢 Green**: Write minimal code to make it pass  
+3. **🔄 Refactor**: Clean up code while keeping tests green
+
+## Why TDD Benefits Claude Code
+
+Claude Code can sometimes over-implement, skip tests, or add multiple features at once. TDD Guard prevents this by:
+
+- **🎯 One test at a time**: Blocks adding multiple test functions in one operation
+- **📋 Minimal implementation**: Prevents code beyond current test requirements  
+- **🧪 Test-first enforcement**: No implementation without failing tests
+- **🔄 Safe refactoring**: Only when tests are passing
+
+## How TDD Guard Works
+
+```mermaid
+flowchart TD
+    A[Claude Code Edit/Write Operation] --> B[Hook Trigger<br/>PreToolUse hook fires]
+    B --> C[Context Analysis<br/>Gather test results, todos, lint status]
+    C --> D[TDD Validation<br/>AI model + TDD principles]
+    D --> E{Decision?}
+    E -->|Approve| F[✅ Proceed<br/>Operation executes]
+    E -->|Block| G[⛔ Block<br/>Show reason to user]
+    
+    style F fill:#d4edda,color:#155724
+    style G fill:#f8d7da,color:#721c24
+```
+
+1. **Hook Trigger**: Claude Code's file operations trigger the `tdd-guard` CLI
+2. **Context Analysis**: Gathers test results, todos, lint status, and proposed changes
+3. **TDD Validation**: AI model checks changes against TDD principles
+4. **Decision**: Either approve or block with detailed explanation
+
 ## Features
 
 - **Test-First Enforcement** - Blocks implementation without failing tests
