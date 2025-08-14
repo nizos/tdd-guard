@@ -20,6 +20,7 @@ This automated enforcement maintains code quality without cluttering prompts wit
 Follow the detailed guidelines in [CONTRIBUTING.md](./CONTRIBUTING.md) for all commits and pull requests.
 
 Key requirements:
+
 - **Atomic commits**: Each commit represents one logical change with its tests
 - **Test and implementation together**: Never separate tests from the code they test
 - **Explain why, not what**: Commit messages should explain the reason for the change
@@ -98,4 +99,3 @@ npm run checks            # Run all checks: typecheck, lint, format, and test
 - **Dependency injection**: Components receive dependencies as parameters
 - **Single responsibility**: Each module has one clear purpose
 - **Type safety**: Comprehensive TypeScript types with runtime validation
-
