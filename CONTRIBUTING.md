@@ -2,7 +2,11 @@
 
 ## Core Requirements
 
-Implementation must be test driven with all relevant and affected tests passing. Run linting and formatting (`npm run checks`) and ensure the build succeeds (`npm run build`). Pull requests should contain meaningful titles and bodies.
+Implementation must be test driven with all relevant and affected tests passing. Run linting and formatting (`npm run checks`) and ensure the build succeeds (`npm run build`).
+
+## Pull Requests
+
+Create focused PRs with meaningful titles that describe what the change accomplishes. The description must explain what the PR introduces and why it's needed. Document any important design decisions or architectural choices. Keep PRs small and focused for easier review and incremental feedback.
 
 ## Commit Messages
 
