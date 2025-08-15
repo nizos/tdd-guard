@@ -17,17 +17,12 @@ This automated enforcement maintains code quality without cluttering prompts wit
 
 ### Commit Guidelines
 
-Follow the detailed guidelines in [CONTRIBUTING.md](./CONTRIBUTING.md) for all commits and pull requests.
-
-Key requirements:
-
 - **Atomic commits**: Each commit represents one logical change with its tests
 - **Test and implementation together**: Never separate tests from the code they test
 - **Explain why, not what**: Commit messages should explain the reason for the change
 - **Conventional format**: Use prefixes to categorize changes: feat, fix, refactor, test, chore, docs
-- **AI transparency**: Include AI assistance acknowledgments when applicable
 
-Example: `feat(go): add network request filtering to reduce noise in captured data` (explains why, not just what)
+Example: `feat: add network request filtering to reduce noise in captured data` (explains why, not just what)
 
 ## Project Structure
 
