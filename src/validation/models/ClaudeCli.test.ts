@@ -1,6 +1,8 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ClaudeCli } from './ClaudeCli'
 import { execFileSync } from 'child_process'
+import { homedir } from 'os'
+import { join } from 'path'
 import * as fs from 'fs'
 import { Config } from '../../config/Config'
 
@@ -84,6 +86,36 @@ describe('ClaudeCli', () => {
     })
   })
 
+  describe('platform-specific shell option', () => {
+    let originalPlatform: PropertyDescriptor | undefined
+
+    beforeEach(() => {
+      originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')
+    })
+
+    afterEach(() => {
+      if (originalPlatform) {
+        Object.defineProperty(process, 'platform', originalPlatform)
+      }
+    })
+
+    test.each([
+      ['win32', true],
+      ['darwin', false],
+      ['linux', false],
+    ])(
+      'platform %s sets shell option to %s',
+      async (platform, expectedShell) => {
+        // Windows needs shell: true to execute 'claude' (.cmd/.bat files)
+        Object.defineProperty(process, 'platform', { value: platform })
+
+        const call = await sut.askAndGetCall()
+
+        expect(call.options.shell).toBe(expectedShell)
+      }
+    )
+  })
+
   describe('response handling', () => {
     test('extracts and returns the result field from CLI output', async () => {
       const modelResponse = '```json\n{"approved": true}\n```'
@@ -150,7 +182,7 @@ describe('ClaudeCli', () => {
       await localSut.client.ask(DEFAULT_TEST_PROMPT)
 
       const call = localSut.getLastCall()
-      expect(call.command).toBe(`${process.env.HOME}/.claude/local/claude`)
+      expect(call.command).toBe(join(homedir(), '.claude', 'local', 'claude'))
     })
   })
 })

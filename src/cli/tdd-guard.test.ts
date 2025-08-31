@@ -15,7 +15,7 @@ describe('tdd-guard CLI', () => {
   describe('CLI Behavior', () => {
     test('has shebang for direct execution', async () => {
       const content = await fs.readFile(cliPath, 'utf-8')
-      const firstLine = content.split('\n')[0]
+      const firstLine = content.split('\n')[0].trim()
 
       expect(firstLine).toBe('#!/usr/bin/env node')
     })
@@ -137,7 +137,7 @@ async function runCli(
     const npxPath = process.platform === 'win32' ? 'npx.cmd' : 'npx'
     const proc = spawn(npxPath, ['tsx', cliPath], {
       env: { ...process.env },
-      shell: false,
+      shell: process.platform === 'win32',
     })
 
     let stderr = ''

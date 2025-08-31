@@ -1,5 +1,6 @@
 import { execFileSync } from 'child_process'
 import { join } from 'path'
+import { homedir } from 'os'
 import { existsSync, mkdirSync } from 'fs'
 import { IModelClient } from '../../contracts/types/ModelClient'
 import { Config } from '../../config/Config'
@@ -12,9 +13,7 @@ export class ClaudeCli implements IModelClient {
   }
 
   async ask(prompt: string): Promise<string> {
-    const claudeBinary = this.config.useSystemClaude
-      ? 'claude'
-      : `${process.env.HOME}/.claude/local/claude`
+    const claudeBinary = this.getClaudeBinary()
 
     const args = [
       '-',
@@ -39,11 +38,20 @@ export class ClaudeCli implements IModelClient {
       timeout: 60000,
       input: prompt,
       cwd: claudeDir,
+      shell: process.platform === 'win32',
     })
 
     // Parse the Claude CLI response and extract the result field
     const response = JSON.parse(output)
 
     return response.result
+  }
+
+  private getClaudeBinary(): string {
+    if (this.config.useSystemClaude) {
+      return 'claude'
+    }
+
+    return join(homedir(), '.claude', 'local', 'claude')
   }
 }

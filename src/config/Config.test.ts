@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest'
 import { Config } from './Config'
+import path from 'path'
 
 describe('Config', () => {
   const originalEnv = process.env
@@ -14,7 +15,7 @@ describe('Config', () => {
 
   describe('dataDir', () => {
     const projectRoot = '/test/project'
-    const projectDataDir = `${projectRoot}/${Config.DEFAULT_DATA_DIR}`
+    const projectDataDir = path.join(projectRoot, Config.DEFAULT_DATA_DIR)
     let config: Config
 
     beforeEach(() => {
@@ -31,30 +32,34 @@ describe('Config', () => {
     })
 
     test('testResultsFilePath returns test.json path within dataDir', () => {
-      expect(config.testResultsFilePath).toBe(`${projectDataDir}/test.json`)
+      expect(config.testResultsFilePath).toBe(
+        path.join(projectDataDir, 'test.json')
+      )
     })
 
     test('todosFilePath returns todos.json path within dataDir', () => {
-      expect(config.todosFilePath).toBe(`${projectDataDir}/todos.json`)
+      expect(config.todosFilePath).toBe(path.join(projectDataDir, 'todos.json'))
     })
 
     test('modificationsFilePath returns modifications.json path within dataDir', () => {
       expect(config.modificationsFilePath).toBe(
-        `${projectDataDir}/modifications.json`
+        path.join(projectDataDir, 'modifications.json')
       )
     })
 
     test('lintFilePath returns lint.json path within dataDir', () => {
-      expect(config.lintFilePath).toBe(`${projectDataDir}/lint.json`)
+      expect(config.lintFilePath).toBe(path.join(projectDataDir, 'lint.json'))
     })
 
     test('configFilePath returns config.json path within dataDir', () => {
-      expect(config.configFilePath).toBe(`${projectDataDir}/config.json`)
+      expect(config.configFilePath).toBe(
+        path.join(projectDataDir, 'config.json')
+      )
     })
 
     test('instructionsFilePath returns instructions.md path within dataDir', () => {
       expect(config.instructionsFilePath).toBe(
-        `${projectDataDir}/instructions.md`
+        path.join(projectDataDir, 'instructions.md')
       )
     })
 
@@ -78,7 +83,7 @@ describe('Config', () => {
         const configWithClaudeDir = new Config()
 
         expect(configWithClaudeDir.dataDir).toBe(
-          `${claudeProjectDir}/${Config.DEFAULT_DATA_DIR}`
+          path.join(claudeProjectDir, Config.DEFAULT_DATA_DIR)
         )
       })
 
@@ -90,7 +95,7 @@ describe('Config', () => {
         const configWithBoth = new Config({ projectRoot: explicitProjectRoot })
 
         expect(configWithBoth.dataDir).toBe(
-          `${explicitProjectRoot}/${Config.DEFAULT_DATA_DIR}`
+          path.join(explicitProjectRoot, Config.DEFAULT_DATA_DIR)
         )
       })
 

@@ -16,7 +16,7 @@ export class ESLint implements Linter {
     const args = buildArgs(filePaths, configPath)
 
     try {
-      await execFileAsync('npx', args)
+      await execFileAsync('npx', args, { shell: process.platform === 'win32' })
       return createLintData(timestamp, filePaths, [])
     } catch (error) {
       if (!isExecError(error)) throw error

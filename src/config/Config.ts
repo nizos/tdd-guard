@@ -9,7 +9,7 @@ const CONFIG_FILENAME = 'config.json'
 const INSTRUCTIONS_FILENAME = 'instructions.md'
 
 export class Config {
-  static readonly DEFAULT_DATA_DIR = '.claude/tdd-guard/data' as const
+  static readonly DEFAULT_DATA_DIR = path.join('.claude', 'tdd-guard', 'data')
 
   readonly dataDir: string
   readonly useSystemClaude: boolean
@@ -33,7 +33,7 @@ export class Config {
 
     // If we have a base directory, construct the full path
     if (baseDir) {
-      return path.join(baseDir, ...Config.DEFAULT_DATA_DIR.split('/'))
+      return path.join(baseDir, Config.DEFAULT_DATA_DIR)
     }
 
     // Default to relative path
