@@ -53,7 +53,7 @@ brew install tdd-guard
 
 ### 2. Add Test Reporter
 
-TDD Guard needs to capture test results from your test runner. Choose your language below:
+TDD Guard needs to capture test results from your test runner. Add the test reporter(s) below that correspond to the languages that Claude is writing in:
 
 <details>
 <summary><b>JavaScript/TypeScript</b></summary>
@@ -239,6 +239,28 @@ Use the `/hooks` command in Claude Code:
 3. Choose `+ Add new matcher...` and enter: `Write|Edit|MultiEdit|TodoWrite`
 4. Select `+ Add new hook...` and enter: `tdd-guard`
 5. Choose where to save (Project settings recommended)
+
+After these hooks are setup, you are then able to [enable/disable](docs/quick-commands.md) tdd-guard with `tdd-guard on/off`.
+
+### 4. Session Clearing
+
+[Session clearing](docs/session-clearing.md) allows for TDD-Guard to automatically clear transient data when starting a new Claude Code session, preventing outdated test results from affecting TDD validation.
+
+To enable automatic session clearing, you need to add the SessionStart hook to your Claude Code configuration.
+You can set this up either through the interactive `/hooks` command or by manually editing your settings file.
+
+### Using Interactive Setup (Recommended)
+
+1. Type `/hooks` in Claude Code
+2. Select `SessionStart - When a new session is started`
+3. Select `+ Add new matcher…`
+4. Enter matcher: `startup|resume|clear`
+5. Select `+ Add new hook…`
+6. Enter command: `tdd-guard`
+7. Choose where to save:
+   - **Project settings** (`.claude/settings.json`) - Recommended for team consistency
+   - **Local settings** (`.claude/settings.local.json`) - For personal preferences
+   - **User settings** (`~/.claude/settings.json`) - For global configuration
 
 ## Configuration
 
