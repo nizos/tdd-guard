@@ -13,4 +13,7 @@ export type Context = {
   test?: string
   lint?: ProcessedLintData
   instructions?: string
+  testFileExists?: boolean
+  language?: string
+  languageCategory?: 'compiled' | 'interpreted'
 }

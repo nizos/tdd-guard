@@ -24,8 +24,9 @@ When blocking, your reason must:
 - "Multiple test addition violation - adding 2 new tests simultaneously. Write and run only ONE test at a time to maintain TDD discipline."
 - "Over-implementation violation. Test fails with 'Calculator is not defined' but implementation adds both class AND method. Create only an empty class first, then run test again."
 - "Refactoring without passing tests. Test output shows failures. Fix failing tests first, ensure all pass, then refactor."
-- "Premature implementation - implementing without a failing test. Write the test first, run it to see the specific failure, then implement only what's needed to address that failure."
-- "No test output captured. Cannot validate TDD compliance without test results. Run tests using standard commands (npm test, pytest) without output filtering or redirection that may prevent the test reporter from capturing results."
+- "Premature implementation violation - creating complete Customer class without evidence of a failing test. Write the test first, run it to see the specific failure message, then implement only what's needed to address that failure (likely just an empty class stub initially)."
+- "Over-implementation for compilation error - you're creating a full class with all methods and logic. Since tests haven't successfully run yet, create only a minimal stub first to fix compilation. Example: just 'public class Customer {}'. Then run tests to see the NEXT specific failure."
+- "No test output captured. Cannot validate TDD compliance without test results. Run tests using standard commands (npm test, pytest, gradle test) without output filtering or redirection that may prevent the test reporter from capturing results."
 
 #### Example Approval Reasons:
 - "Adding single test to test file - follows TDD red phase"

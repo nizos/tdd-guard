@@ -24,7 +24,7 @@ TDD Guard ensures Claude Code follows Test-Driven Development principles. When y
 - **Test-First Enforcement** - Blocks implementation without failing tests
 - **Minimal Implementation** - Prevents code beyond current test requirements
 - **Lint Integration** - Enforces refactoring using your linting rules
-- **Multi-Language Support** - TypeScript, JavaScript, Python, PHP, Go, and Rust
+- **Multi-Language Support** - TypeScript, JavaScript, Python, PHP, Go, Rust, Java, and Kotlin
 - **Customizable Rules** - Adjust validation rules to match your TDD style
 - **Flexible Validation** - Choose faster or more capable models for your needs
 - **Session Control** - Toggle on and off mid-session
@@ -33,7 +33,7 @@ TDD Guard ensures Claude Code follows Test-Driven Development principles. When y
 
 - Node.js 22+
 - Claude Code or Anthropic API key
-- Test framework (Jest, Vitest, pytest, PHPUnit, Go 1.24+, or Rust with cargo/cargo-nextest)
+- Test framework (Jest, Vitest, pytest, PHPUnit, Go 1.24+, Rust with cargo/cargo-nextest, or JUnit 5)
 
 ## Quick Start
 
@@ -227,6 +227,46 @@ test:
 ```
 
 **Note:** The reporter acts as a filter that passes test output through unchanged while capturing results for TDD Guard. See the [Rust reporter configuration](reporters/rust/README.md#configuration) for more details.
+
+</details>
+
+<details>
+<summary><b>Java/Kotlin (JUnit 5)</b></summary>
+
+Download the reporter JAR from releases:
+
+```bash
+curl -L -o libs/tdd-guard-junit5.jar \
+  https://github.com/lightspeed/tdd-guard/releases/latest/download/junit5-0.1.0.jar
+```
+
+**Gradle**:
+
+```kotlin
+dependencies {
+    testImplementation(files("libs/tdd-guard-junit5.jar"))
+}
+
+tasks.test {
+    systemProperty("tddguard.projectRoot", project.rootDir.absolutePath)
+    environment("TDDGUARD_ENABLED", "true")
+}
+```
+
+**Maven**:
+
+```bash
+mvn install:install-file \
+  -Dfile=libs/tdd-guard-junit5.jar \
+  -DgroupId=com.lightspeed.tddguard \
+  -DartifactId=junit5 \
+  -Dversion=0.1.0 \
+  -Dpackaging=jar
+```
+
+Then add dependency in pom.xml and configure Surefire plugin.
+
+**Note:** For GitHub Packages installation with automatic dependency resolution, see [reporters/junit5/README.md](reporters/junit5/README.md). The direct JAR download method requires no authentication.
 
 </details>
 

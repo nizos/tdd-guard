@@ -34,7 +34,7 @@ export const buildArgs = (
   filePaths: string[],
   configPath?: string
 ): string[] => {
-  const args = ['run', '--output.json.path=stdout', '--path-mode=abs']
+  const args = ['run', '--out-format=json', '--path-prefix=.']
 
   if (configPath) {
     args.push('--config', configPath)
@@ -52,20 +52,15 @@ export const buildArgs = (
 const isExecError = (error: unknown): error is Error & { stdout?: string } =>
   error !== null && typeof error === 'object' && 'stdout' in error
 
-// Parse golangci-lint JSON output - only first line contains JSON, rest is summary
+// Parse golangci-lint JSON output
 const parseResults = (stdout?: string): GolangciLintIssue[] => {
   try {
     if (stdout === undefined || stdout === '') {
       return []
     }
 
-    const lines = stdout.split('\n')
-    const jsonLine = lines[0]
-    if (jsonLine.trim() === '') {
-      return []
-    }
-
-    const parsed: GolangciLintResult = JSON.parse(jsonLine)
+    // golangci-lint v1.64+ outputs full JSON object (not line-based)
+    const parsed: GolangciLintResult = JSON.parse(stdout.trim())
     return parsed.Issues ?? []
   } catch {
     return []

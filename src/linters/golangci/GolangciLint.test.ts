@@ -124,15 +124,15 @@ describe('GolangciLint', () => {
     test('should build args for directory-based linting with current directory', () => {
       const args = buildArgs([], configPath)
 
-      // Should contain basic golangci-lint arguments
+      // Should contain basic golangci-lint arguments (v1.64+ format)
       expect(args).toContain('run')
-      expect(args).toContain('--output.json.path=stdout')
+      expect(args).toContain('--out-format=json')
       expect(args).toContain('--config')
       expect(args).toContain(configPath)
 
       // With empty filePaths, should have no directories in args
       expect(args).not.toContain('.')
-      expect(args).toContain('--path-mode=abs')
+      expect(args).toContain('--path-prefix=.')
     })
   })
 

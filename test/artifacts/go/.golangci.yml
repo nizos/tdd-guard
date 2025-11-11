@@ -1,6 +1,6 @@
-version: 2
 linters:
   enable:
     - govet
     - errcheck
     - ineffassign
+    - typecheck

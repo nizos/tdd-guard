@@ -83,6 +83,7 @@ reporters/pytest/pytest.ini
 
 # Claude indexer
 .claude-indexer/
+.code-indexer/
 
 # Internal documentation
 docs/internal/
@@ -91,3 +92,46 @@ docs/internal/
 target/
 **/*.rs.bk
 *.pdb
+
+# Java/Gradle
+*.class
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+bin/
+out/
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# Project-specific
+.analysis/
+.tmp/
+reports/reviews/
+reports/troubleshooting/

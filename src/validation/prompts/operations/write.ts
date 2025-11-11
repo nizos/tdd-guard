@@ -19,12 +19,12 @@ You are reviewing a Write operation where a new file is being created. Determine
    - Must have evidence of a failing test
    - Check test output for justification
    - Implementation must match test failure type
-   - No test output = Likely violation
+   - No test output = Likely violation (unless minimal stub for compiled languages)
 
 3. **Special considerations:**
    - Configuration files: Generally allowed
    - Test helpers/utilities: Allowed if supporting TDD
-   - Empty stubs: Allowed if addressing test failure
+   - Language-specific rules apply (see Compiled Language Rules section for Java/Go/Rust)
 
 ### Common Write Scenarios
 
@@ -38,17 +38,16 @@ You are reviewing a Write operation where a new file is being created. Determine
 - No output = "Premature implementation"
 - With output = Verify it matches implementation
 
-**Scenario 3**: Writing full implementation
-- Test shows "not defined"
-- Writing complete class with methods = Violation
-- Should write minimal stub first
+**Scenario 3**: Writing implementation for compiled languages
+- See "Compiled Language Specific Rules" section for details on allowed stubs and patterns
 
 ### Key Questions for Write Operations
 
 1. Is this creating a test or implementation file?
 2. If test: Does it contain only one test?
-3. If implementation: Is there a failing test?
-4. Does the implementation match the test failure?
+3. If implementation: Is there test output showing a failure?
+4. Does the implementation match the test failure type?
+5. For compiled languages: Are language-specific stub patterns being followed?
 
 ## Changes to Review
 `

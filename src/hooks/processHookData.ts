@@ -14,6 +14,7 @@ import { HookDataSchema, isTodoWriteOperation, ToolOperationSchema } from '../co
 import { PytestResultSchema } from '../contracts/schemas/pytestSchemas'
 import { isTestPassing, TestResultSchema } from '../contracts/schemas/reporterSchemas'
 import { LintDataSchema } from '../contracts/schemas/lintSchemas'
+import { Config } from '../config/Config'
 
 export interface ProcessHookDataDeps {
   storage?: Storage
@@ -133,10 +134,11 @@ function shouldSkipValidation(hookData: HookData): boolean {
 
 async function performValidation(deps: ProcessHookDataDeps): Promise<ValidationResult> {
   if (deps.validator && deps.storage) {
-    const context = await buildContext(deps.storage)
+    const config = new Config()
+    const context = await buildContext(deps.storage, config)
     return await deps.validator(context)
   }
-  
+
   return defaultResult
 }
 

@@ -91,7 +91,11 @@ describe('processHookData', () => {
         totalIssues: 0,
         issuesByFile: new Map(),
         summary: 'No lint data available'
-      }
+      },
+      instructions: undefined,
+      testFileExists: false,
+      language: 'typescript',
+      languageCategory: 'interpreted',
     })
     expect(result).toEqual(BLOCK_RESULT)
   })

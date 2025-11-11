@@ -25,6 +25,9 @@ describe('buildContext', () => {
         warningCount: 0,
       },
       instructions: undefined,
+      testFileExists: false,
+      language: undefined,
+      languageCategory: undefined,
     })
   })
 
@@ -47,13 +50,18 @@ describe('buildContext', () => {
         errorCount: 0,
         warningCount: 0,
       },
+      testFileExists: false,
+      language: undefined,
+      languageCategory: undefined,
     })
   })
 
   it('should parse modifications JSON data when valid JSON is stored', async () => {
     const modificationsData = {
-      file_path: '/src/example.ts',
-      content: 'new file content',
+      tool_input: {
+        file_path: '/src/example.ts',
+        content: 'new file content',
+      },
     }
     const modificationsJson = JSON.stringify(modificationsData)
     await storage.saveModifications(modificationsJson)
@@ -74,6 +82,9 @@ describe('buildContext', () => {
         errorCount: 0,
         warningCount: 0,
       },
+      testFileExists: false,
+      language: 'typescript',
+      languageCategory: 'interpreted',
     })
   })
 

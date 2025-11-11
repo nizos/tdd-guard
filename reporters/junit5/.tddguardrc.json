@@ -1,0 +1,6 @@
+{
+  "testResultsPath": "build/test-results/test/*.xml",
+  "testSourceDirs": ["src/test/java"],
+  "mainSourceDirs": ["src/main/java"],
+  "reporter": "junit5"
+}

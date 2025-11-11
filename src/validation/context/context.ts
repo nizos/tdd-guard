@@ -26,6 +26,7 @@ import { WRITE } from '../prompts/operations/write'
 import { TODOS } from '../prompts/tools/todos'
 import { TEST_OUTPUT } from '../prompts/tools/test-output'
 import { LINT_RESULTS } from '../prompts/tools/lint-results'
+import { COMPILED_LANGUAGE_RULES } from '../prompts/languages/compiled'
 
 export function generateDynamicContext(
   context: Context,
@@ -40,19 +41,39 @@ export function generateDynamicContext(
     context.instructions ?? RULES,
     FILE_TYPES,
 
-    // 2. Operation-specific context and changes
+    // 2. Java support: Language-specific rules (only for compiled languages)
+    formatLanguageRules(context.languageCategory),
+
+    // 3. Operation-specific context and changes
     formatOperation(operation),
 
-    // 3. Additional context
-    formatTestSection(context.test),
+    // 4. Additional context (Java support: includes test file detection + language category)
+    formatTestSection(
+      context.test,
+      context.testFileExists,
+      context.languageCategory
+    ),
     formatTodoSection(context.todo),
     formatLintSection(context.lint),
 
-    // 4. Response format
+    // 5. Response format
     RESPONSE,
   ]
 
   return sections.filter(Boolean).join('\n')
+}
+
+/**
+ * Java support: Includes compiled language rules only for Java/Go/Rust.
+ * Python/JavaScript/TypeScript get empty string (no additional rules = strict TDD).
+ */
+function formatLanguageRules(
+  languageCategory?: 'compiled' | 'interpreted'
+): string {
+  if (languageCategory === 'compiled') {
+    return COMPILED_LANGUAGE_RULES
+  }
+  return '' // Interpreted languages: no special rules, original strict TDD behavior
 }
 
 function formatOperation(operation: ToolOperation): string {
@@ -108,12 +129,40 @@ function formatEdit(
   )
 }
 
-function formatTestSection(testOutput?: string): string {
-  if (!testOutput) return ''
+/**
+ * Java support: Formats test output with language-aware messaging.
+ * For compiled languages with test file: Adds note about POJO patterns (even if test output exists).
+ * For interpreted languages: Maintains original strict behavior (zero changes).
+ */
+function formatTestSection(
+  testOutput?: string,
+  testFileExists?: boolean,
+  languageCategory?: 'compiled' | 'interpreted'
+): string {
+  let output: string
 
-  const output = testOutput.trim()
-    ? new TestResultsProcessor().process(testOutput)
-    : 'No test output available. Tests must be run before implementing.'
+  if (testOutput?.trim()) {
+    output = new TestResultsProcessor().process(testOutput)
+
+    // Java support: Even with test output, remind about POJO patterns if test file exists
+    if (testFileExists && languageCategory === 'compiled') {
+      output +=
+        '\n\n**NOTE**: Test file exists for this implementation file. Refer to Java/Kotlin data class patterns above if creating POJOs.'
+    }
+  } else if (testFileExists) {
+    // Java support: Different messaging for compiled vs interpreted languages
+    if (languageCategory === 'compiled') {
+      output =
+        'No test output available - tests have not run successfully yet (likely compilation failure).\n\n**IMPORTANT**: A corresponding test file EXISTS for this implementation. **This is COMPILED LANGUAGE TDD** - compilation stubs are REQUIRED and ALLOWED.\n\nRefer to the "Compiled Language Specific Rules" section above for what constitutes an acceptable compilation phase stub.'
+    } else {
+      // Interpreted languages: original behavior
+      output =
+        'No test output available - tests have not run successfully yet.\n\n**IMPORTANT**: A corresponding test file EXISTS for this implementation. Allow minimal stubs to fix issues.'
+    }
+  } else {
+    output =
+      'No test output available and no corresponding test file detected. Implementation without tests violates TDD principles.'
+  }
 
   return TEST_OUTPUT + codeBlock(output)
 }
