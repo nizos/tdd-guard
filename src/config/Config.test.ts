@@ -220,6 +220,43 @@ describe('Config', () => {
     })
   })
 
+  describe('anthropicBaseUrl', () => {
+    test('can be set via options', () => {
+      const config = new Config({
+        anthropicBaseUrl: 'https://api.z.ai/api/anthropic',
+      })
+
+      expect(config.anthropicBaseUrl).toBe('https://api.z.ai/api/anthropic')
+    })
+
+    test('options take precedence over env var', () => {
+      process.env.TDD_GUARD_ANTHROPIC_BASE_URL = 'https://env-url.example.com'
+
+      const config = new Config({
+        anthropicBaseUrl: 'https://options-url.example.com',
+      })
+
+      expect(config.anthropicBaseUrl).toBe('https://options-url.example.com')
+    })
+
+    test('falls back to env var when not in options', () => {
+      process.env.TDD_GUARD_ANTHROPIC_BASE_URL =
+        'https://api.z.ai/api/anthropic'
+
+      const config = new Config()
+
+      expect(config.anthropicBaseUrl).toBe('https://api.z.ai/api/anthropic')
+    })
+
+    test('returns undefined when neither options nor env var are set', () => {
+      delete process.env.TDD_GUARD_ANTHROPIC_BASE_URL
+
+      const config = new Config()
+
+      expect(config.anthropicBaseUrl).toBeUndefined()
+    })
+  })
+
   describe('modelType', () => {
     test('can be set via options', () => {
       const config = new Config({ modelType: 'anthropic_api' })

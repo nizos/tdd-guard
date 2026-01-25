@@ -34,6 +34,17 @@ describe('AnthropicApi', () => {
     expect(sut.wasCreatedWithApiKey(apiKey)).toBe(true)
   })
 
+  test('should create Anthropic client with baseURL from config', () => {
+    const baseUrl = 'https://api.z.ai/api/anthropic'
+    const customSut = createSut(apiKey, modelVersion, baseUrl)
+
+    expect(customSut.wasCreatedWithBaseUrl(baseUrl)).toBe(true)
+  })
+
+  test('should not include baseURL when not configured', () => {
+    expect(sut.wasCreatedWithoutBaseUrl()).toBe(true)
+  })
+
   test('uses model version from config', async () => {
     const call = await sut.askAndGetCall()
     expect(call.model).toBe(modelVersion)
@@ -92,7 +103,7 @@ interface MessageCreateParams {
   messages: Array<{ role: string; content: string }>
 }
 
-function createSut(apiKey?: string, modelVersion?: string) {
+function createSut(apiKey?: string, modelVersion?: string, baseUrl?: string) {
   vi.clearAllMocks()
 
   const mockCreate = vi.fn().mockResolvedValue({
@@ -109,7 +120,11 @@ function createSut(apiKey?: string, modelVersion?: string) {
       }) as unknown as Anthropic
   )
 
-  const config = new Config({ anthropicApiKey: apiKey, modelVersion })
+  const config = new Config({
+    anthropicApiKey: apiKey,
+    modelVersion,
+    anthropicBaseUrl: baseUrl,
+  })
   const client = new AnthropicApi(config)
 
   const mockResponse = (text: string): void => {
@@ -142,6 +157,18 @@ function createSut(apiKey?: string, modelVersion?: string) {
     )
   }
 
+  const wasCreatedWithBaseUrl = (url: string): boolean => {
+    return mockAnthropicConstructor.mock.calls.some(
+      (call) => call[0]?.baseURL === url
+    )
+  }
+
+  const wasCreatedWithoutBaseUrl = (): boolean => {
+    return mockAnthropicConstructor.mock.calls.some(
+      (call) => !('baseURL' in (call[0] ?? {}))
+    )
+  }
+
   const askWithResponse = async (
     responseText: string
   ): Promise<string | undefined> => {
@@ -165,6 +192,8 @@ function createSut(apiKey?: string, modelVersion?: string) {
     getLastCall,
     askAndGetCall,
     wasCreatedWithApiKey,
+    wasCreatedWithBaseUrl,
+    wasCreatedWithoutBaseUrl,
     askWithResponse,
     askWithError,
   }

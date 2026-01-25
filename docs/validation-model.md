@@ -44,6 +44,44 @@ Get your API key from [console.anthropic.com](https://console.anthropic.com/)
 - Charges separately from your Claude Code subscription ([pricing](https://www.anthropic.com/pricing))
 - We use `TDD_GUARD_ANTHROPIC_API_KEY` (not `ANTHROPIC_API_KEY`) to prevent accidental charges. If you used the regular `ANTHROPIC_API_KEY`, Claude Code might use it for all your normal coding tasks, charging your API account instead of using your subscription.
 
+## Z.AI (GLM 4.7) API
+
+TDD Guard supports Z.AI's GLM models as drop-in replacements for Anthropic's Claude models. Z.AI provides an Anthropic-compatible API endpoint.
+
+```bash
+VALIDATION_CLIENT=api
+TDD_GUARD_ANTHROPIC_API_KEY=your_zai_api_key
+TDD_GUARD_ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic
+TDD_GUARD_MODEL_VERSION=GLM-4.7
+```
+
+**Available GLM Models:**
+
+| Use Case | Model       | Notes                                   |
+| -------- | ----------- | --------------------------------------- |
+| Default  | GLM-4.7     | Recommended for most validation tasks   |
+| Fast     | GLM-4.5-Air | Lighter model for faster response times |
+
+**Claude Code Integration:**
+
+If you're using Claude Code with Z.AI, configure the environment variables in your Claude Code settings:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "your_zai_api_key",
+    "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+    "API_TIMEOUT_MS": "3000000"
+  }
+}
+```
+
+Claude Code model environment variable mapping to GLM models:
+
+- `ANTHROPIC_DEFAULT_OPUS_MODEL`: GLM-4.7
+- `ANTHROPIC_DEFAULT_SONNET_MODEL`: GLM-4.7
+- `ANTHROPIC_DEFAULT_HAIKU_MODEL`: GLM-4.5-Air
+
 ## Model Selection
 
 Configure which Claude model to use for validation (default: `claude-sonnet-4-0`):

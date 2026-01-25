@@ -11,6 +11,9 @@ export class AnthropicApi implements IModelClient {
     this.config = config ?? new Config()
     this.client = new Anthropic({
       apiKey: this.config.anthropicApiKey,
+      ...(this.config.anthropicBaseUrl && {
+        baseURL: this.config.anthropicBaseUrl,
+      }),
     })
   }
 
