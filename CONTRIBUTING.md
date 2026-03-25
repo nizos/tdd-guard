@@ -16,11 +16,11 @@ Use conventional commits and communicate the why, not just what. Focus on the re
 
 Project root path can be specified so that tests can be run from any directory in the project. For security, validate that the project root path is absolute and that it is the current working directory or an ancestor of it. Relevant cases must be added to reporter integration tests.
 
-#### Build Error handling for Compiled and Typed Languages
+#### Build Error Handling for Compiled and Typed Languages
 
-For compiled languages, the reporter must handle build failures explicitly. When compilation fails, no tests run and no test results are produced. To keep the core validation layer language-agnostic, reporters for compiled languages should detect build failures and write a synthetic test entry with a failed state to `test.json`. This allows the validator to reason about the failure without requiring special-casing in the core.
+Reporters for compiled languages must produce synthetic test failures for compilation errors. When a build fails before tests can run, the reporter should emit a failed test entry with the compiler diagnostics as error messages. Without this, compilation failures produce empty output and the validation agent has no signal that something is broken. The Go and Rust reporters serve as reference implementations (search for `CompilationError` in `reporters/go/internal/parser/parser.go` and `compilation::build` in `reporters/rust/src/transformer.rs`).
 
-See the Go reporter (`reporters/go/internal/parser/parser.go`, search for `CompilationError`) and Rust reporter (`reporters/rust/src/transformer.rs`, search for `compilation::build`) for reference implementations.
+If your reporter introduces a new language, update the pre-filter's file type detection and test counter so that single test additions can be allowed through without full validation.
 
 ## Style Guidelines
 
