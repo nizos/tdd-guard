@@ -46,6 +46,8 @@ Open Claude Code in your project and run:
 
 This adds the marketplace, installs the plugin, and configures the test reporter for your project. You may need to restart your terminal session or IDE extension for the setup skill to appear. For manual installation and configuration, see the [installation guide](docs/installation.md).
 
+> Multiple installation methods (Homebrew, npm, npx) can conflict and cause unexpected behaviour. The recommended installation is via the Claude Code plugin. Follow the steps above.
+
 ## Configuration
 
 - [Custom instructions](docs/custom-instructions.md) - Customize TDD validation rules
