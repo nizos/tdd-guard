@@ -258,3 +258,16 @@ test:
 ```
 
 **Note:** The reporter acts as a filter that passes test output through unchanged while capturing results for TDD Guard. See the [Rust reporter configuration](../reporters/rust/README.md#configuration) for more details.
+
+## Troubleshooting
+
+### Hooks not working
+
+The recommended installation method is via the plugin, as
+described in the [README](../README.md#installation).
+
+Non-plugin installations might be incompatible with your current Claude Code version, hooks will
+fail silently or exit with errors.
+
+If you have an existing Homebrew or npm installation, remove it and switch to the plugin
+installation.
