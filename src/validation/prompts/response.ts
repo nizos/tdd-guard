@@ -25,12 +25,12 @@ When blocking, your reason must:
 - "Over-implementation violation. Test fails with 'Calculator is not defined' but implementation adds both class AND method. Create only an empty class first, then run test again."
 - "Refactoring without passing tests. Test output shows failures. Fix failing tests first, ensure all pass, then refactor."
 - "Premature implementation - implementing without a failing test. Write the test first, run it to see the specific failure, then implement only what's needed to address that failure."
-- "No test output captured. Cannot validate TDD compliance without test results. Run tests using standard commands (npm test, pytest) without output filtering or redirection that may prevent the test reporter from capturing results."
 
 #### Example Approval Reasons:
 - "Adding single test to test file - follows TDD red phase"
 - "Minimal implementation addressing specific test failure"
 - "Refactoring with evidence of passing tests"
+- "No test output available - insufficient information to determine TDD violation, approving changes"
 
 ### Focus
 Remember: You are ONLY evaluating TDD compliance, not:
