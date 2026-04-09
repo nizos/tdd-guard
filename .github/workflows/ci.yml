@@ -192,6 +192,12 @@ jobs:
           bundle config set --local path vendor/bundle
           bundle install
 
+      - name: Install Minitest reporter dependencies
+        working-directory: reporters/minitest
+        run: |
+          bundle config set --local path vendor/bundle
+          bundle install
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
