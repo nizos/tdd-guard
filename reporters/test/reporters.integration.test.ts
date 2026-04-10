@@ -124,6 +124,7 @@ describe('Reporters', () => {
         { name: 'rust', expected: 'compilation' },
         { name: 'storybook', expected: 'single-import-error.stories' },
         { name: 'rspec', expected: 'single_import_error_spec.rb' },
+        { name: 'minitest', expected: 'single_import_error_test.rb' },
       ]
 
       it.each(reporters)('$name reports module path', ({ name, expected }) => {
@@ -204,6 +205,10 @@ describe('Reporters', () => {
         { name: 'storybook', expected: 'play-test' },
         {
           name: 'rspec',
+          expected: 'LoadError: cannot load such file -- non_existent_module',
+        },
+        {
+          name: 'minitest',
           expected: 'LoadError: cannot load such file -- non_existent_module',
         },
       ]
@@ -346,6 +351,11 @@ describe('Reporters', () => {
           expected:
             'single_import_error_spec.rb::LoadError: cannot load such file -- non_existent_module',
         },
+        {
+          name: 'minitest',
+          expected:
+            'single_import_error_test.rb::LoadError: cannot load such file -- non_existent_module',
+        },
       ]
 
       it.each(reporters)(
@@ -418,6 +428,7 @@ describe('Reporters', () => {
         { name: 'rust', expected: 'failed' },
         { name: 'storybook', expected: 'failed' },
         { name: 'rspec', expected: 'failed' },
+        { name: 'minitest', expected: 'failed' },
       ]
 
       it.each(reporters)(
@@ -588,6 +599,14 @@ describe('Reporters', () => {
             'single_import_error_spec.rb',
           ],
         },
+        {
+          name: 'minitest',
+          expected: [
+            'LoadError',
+            'cannot load such file -- non_existent_module',
+            'single_import_error_test.rb',
+          ],
+        },
       ]
 
       it.each(reporters)(
@@ -668,6 +687,7 @@ describe('Reporters', () => {
         { name: 'rust', expected: 'failed' },
         { name: 'storybook', expected: 'failed' },
         { name: 'rspec', expected: 'failed' },
+        { name: 'minitest', expected: 'failed' },
       ]
 
       it.each(reporters)(

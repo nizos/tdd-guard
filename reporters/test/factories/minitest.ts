@@ -43,7 +43,14 @@ export function createMinitestReporter(): ReporterConfig {
 
       spawnSync(
         bundleBinary,
-        ['exec', 'ruby', '-I', reporterLibPath, testFile],
+        [
+          'exec',
+          'ruby',
+          '-I',
+          reporterLibPath,
+          '-rtdd_guard_minitest/autorun',
+          testFile,
+        ],
         {
           cwd: tempDir,
           env: {
