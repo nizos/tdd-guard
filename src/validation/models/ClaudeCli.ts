@@ -33,11 +33,15 @@ export class ClaudeCli implements IModelClient {
       mkdirSync(claudeDir, { recursive: true })
     }
 
+    const env = { ...process.env }
+    delete env.ANTHROPIC_API_KEY
+
     const output = execFileSync(claudeBinary, args, {
       encoding: 'utf-8',
       timeout: 60000,
       input: prompt,
       cwd: claudeDir,
+      env,
       shell: process.platform === 'win32',
     })
 

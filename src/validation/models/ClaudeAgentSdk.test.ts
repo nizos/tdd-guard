@@ -124,6 +124,20 @@ describe('ClaudeAgentSdk', () => {
 
       delete process.env.SOME_OTHER_VAR
     })
+
+    test('strips ANTHROPIC_API_KEY from env to prevent subscription bypass', async () => {
+      process.env.ANTHROPIC_API_KEY = 'sk-dummy-key'
+
+      const freshSetup = setupClient(createSDKResultMessage(), config)
+      await freshSetup.client.ask(prompt)
+
+      expect(freshSetup.getUsedOptions().env).toBeDefined()
+      expect(freshSetup.getUsedOptions().env).not.toHaveProperty(
+        'ANTHROPIC_API_KEY'
+      )
+
+      delete process.env.ANTHROPIC_API_KEY
+    })
   })
 
   describe('result handling', () => {
