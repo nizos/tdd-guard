@@ -26,13 +26,27 @@ gem install tdd-guard-minitest
 
 ## Usage
 
-Run Minitest with the TDD Guard reporter:
+Require the autorun entry point before your test files. This registers the reporter as a Minitest plugin and also installs an `at_exit` hook that captures load errors (for example, a new test file that `require`s an implementation file that doesn't exist yet) as synthetic failed tests, so TDD Guard can see that a test tried to run.
+
+Run a single test file directly:
 
 ```bash
-ruby -r tdd_guard_minitest/reporter test/my_test.rb
+ruby -rtdd_guard_minitest/autorun test/my_test.rb
 ```
 
-The reporter registers itself as a Minitest plugin and activates automatically when required.
+For Rails or Rake projects, require it from `test/test_helper.rb`:
+
+```ruby
+require "tdd_guard_minitest/autorun"
+```
+
+Or pass it to your `Rake::TestTask` so every `rake test` invocation loads it first:
+
+```ruby
+Rake::TestTask.new do |t|
+  t.ruby_opts << "-rtdd_guard_minitest/autorun"
+end
+```
 
 ## Configuration
 

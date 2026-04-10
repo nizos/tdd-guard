@@ -16,6 +16,27 @@ module TddGuardMinitest
       @storage_dir = determine_storage_dir
     end
 
+    # Writes a synthetic failed-test JSON for an exception raised before
+    # Minitest had a chance to run (typically a LoadError from a missing
+    # require at the top of a test file). Called from lib/tdd_guard_minitest/
+    # autorun.rb's at_exit hook when $! is set.
+    #
+    # Mirrors the structure of the RSpec reporter's load-error handling
+    # (see reporters/rspec/lib/tdd_guard_rspec/formatter.rb): inject a
+    # synthetic entry into @test_results, then write the JSON. Skips if
+    # test.json already exists to avoid clobbering real results written
+    # by any earlier at_exit block.
+    def self.handle_load_error(exception)
+      new(StringIO.new).handle_load_error(exception)
+    end
+
+    def handle_load_error(exception)
+      return if File.exist?(File.join(@storage_dir, "test.json"))
+
+      add_load_error(exception)
+      write_load_error_result
+    end
+
     def record(result)
       state = if result.skipped?
                 "skipped"
@@ -89,6 +110,58 @@ module TddGuardMinitest
       expanded = File.expand_path(root)
       cwd = Dir.pwd
       cwd == expanded || cwd.start_with?("#{expanded}/")
+    end
+
+    # Injects a synthetic failed test entry derived from an exception raised
+    # before Minitest could run. Mirrors RSpec's `add_load_error_results`
+    # (reporters/rspec/lib/tdd_guard_rspec/formatter.rb).
+    def add_load_error(exception)
+      frame = first_user_frame(exception.backtrace)
+      file_path = frame ? frame.split(":", 2).first.to_s.sub(%r{^\./}, "") : "unknown"
+      name = "#{exception.class}: #{exception.message.lines.first.to_s.strip}"
+      message = build_load_error_message(exception, frame)
+
+      @test_results << {
+        "name" => name,
+        "fullName" => "#{file_path}::#{name}",
+        "state" => "failed",
+        "errors" => [{ "message" => message }]
+      }
+    end
+
+    def first_user_frame(backtrace)
+      return nil unless backtrace
+
+      backtrace.find do |line|
+        (line.include?("_test.rb") || line.include?("_spec.rb")) && !line.include?("/gems/")
+      end
+    end
+
+    def build_load_error_message(exception, frame)
+      header = "#{exception.class}: #{exception.message}"
+      return header unless frame
+
+      "#{header}\n    #{frame.sub(%r{^\./}, '')}"
+    end
+
+    # Writes the synthetic load-error JSON. Inlined here (rather than reusing
+    # the public `report` method) so that this PR does not need to change
+    # `report`'s signature -- the `reason` field is added by a separate issue.
+    def write_load_error_result
+      modules_map = {}
+      @test_results.each do |test|
+        module_path = test["fullName"].split("::").first
+        modules_map[module_path] ||= { "moduleId" => module_path, "tests" => [] }
+        modules_map[module_path]["tests"] << test
+      end
+
+      result = {
+        "testModules" => modules_map.values,
+        "reason" => "failed"
+      }
+
+      FileUtils.mkdir_p(@storage_dir)
+      File.write(File.join(@storage_dir, "test.json"), JSON.pretty_generate(result))
     end
   end
 end

@@ -66,6 +66,7 @@ eggs/
 .eggs/
 lib/
 !reporters/rspec/lib/
+!reporters/minitest/lib/
 lib64/
 parts/
 sdist/

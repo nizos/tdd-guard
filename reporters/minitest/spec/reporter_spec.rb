@@ -283,4 +283,154 @@ RSpec.describe TddGuardMinitest::Reporter do
       end
     end
   end
+
+  describe ".handle_load_error" do
+    # Helper: run handle_load_error in an isolated tmpdir and return parsed JSON
+    def run_handle_load_error_in(tmpdir, exception)
+      real_tmpdir = File.realpath(tmpdir)
+      Dir.chdir(real_tmpdir) do
+        ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => real_tmpdir) do
+          described_class.handle_load_error(exception)
+          json_path = File.join(real_tmpdir, default_data_dir, "test.json")
+          JSON.parse(File.read(json_path))
+        end
+      end
+    end
+
+    # Helper: build a LoadError with a synthetic backtrace
+    def build_load_error(message:, backtrace:)
+      err = LoadError.new(message)
+      err.set_backtrace(backtrace)
+      err
+    end
+
+    it "writes a synthetic failed test module" do
+      Dir.mktmpdir do |tmpdir|
+        exc = build_load_error(
+          message: "cannot load such file -- my_class",
+          backtrace: ["./test/my_class_test.rb:3:in `require'"]
+        )
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        tests = data["testModules"].flat_map { |m| m["tests"] }
+        expect(tests.length).to eq(1)
+        expect(tests[0]["state"]).to eq("failed")
+      end
+    end
+
+    it "extracts file path from the first user-land backtrace frame" do
+      Dir.mktmpdir do |tmpdir|
+        exc = build_load_error(
+          message: "cannot load such file -- my_class",
+          backtrace: [
+            "/path/to/gems/bundler-2.0/lib/bundler/runtime.rb:10:in `require'",
+            "./test/my_class_test.rb:3:in `require'",
+            "./test/my_class_test.rb:3:in `<top (required)>'"
+          ]
+        )
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        expect(data["testModules"][0]["moduleId"]).to eq("test/my_class_test.rb")
+      end
+    end
+
+    it "uses exception class and message as the test name" do
+      Dir.mktmpdir do |tmpdir|
+        exc = build_load_error(
+          message: "cannot load such file -- my_class",
+          backtrace: ["./test/my_class_test.rb:3:in `require'"]
+        )
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        tests = data["testModules"].flat_map { |m| m["tests"] }
+        expect(tests[0]["name"]).to eq("LoadError: cannot load such file -- my_class")
+        expect(tests[0]["fullName"]).to eq("test/my_class_test.rb::LoadError: cannot load such file -- my_class")
+      end
+    end
+
+    it "includes the class, message, and backtrace frame in the errors entry" do
+      Dir.mktmpdir do |tmpdir|
+        exc = build_load_error(
+          message: "cannot load such file -- my_class",
+          backtrace: ["./test/my_class_test.rb:3:in `<top (required)>'"]
+        )
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        tests = data["testModules"].flat_map { |m| m["tests"] }
+        error_msg = tests[0]["errors"][0]["message"]
+        expect(error_msg).to include("LoadError")
+        expect(error_msg).to include("cannot load such file -- my_class")
+        expect(error_msg).to include("test/my_class_test.rb")
+      end
+    end
+
+    it "emits reason: failed" do
+      Dir.mktmpdir do |tmpdir|
+        exc = build_load_error(
+          message: "cannot load such file -- my_class",
+          backtrace: ["./test/my_class_test.rb:3:in `require'"]
+        )
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        expect(data["reason"]).to eq("failed")
+      end
+    end
+
+    it "falls back to 'unknown' module when backtrace has only gem frames" do
+      Dir.mktmpdir do |tmpdir|
+        exc = build_load_error(
+          message: "cannot load such file -- my_class",
+          backtrace: [
+            "/path/to/gems/bundler-2.0/lib/bundler/runtime.rb:10:in `require'",
+            "/path/to/gems/minitest-5.27.0/lib/minitest.rb:5:in `require'"
+          ]
+        )
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        expect(data["testModules"][0]["moduleId"]).to eq("unknown")
+      end
+    end
+
+    it "falls back to 'unknown' module when backtrace is nil" do
+      Dir.mktmpdir do |tmpdir|
+        exc = LoadError.new("cannot load such file -- my_class")
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        expect(data["testModules"][0]["moduleId"]).to eq("unknown")
+      end
+    end
+
+    it "accepts any Exception subclass (not just LoadError)" do
+      Dir.mktmpdir do |tmpdir|
+        exc = RuntimeError.new("something else went wrong")
+        exc.set_backtrace(["./test/boom_test.rb:5:in `<top (required)>'"])
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        tests = data["testModules"].flat_map { |m| m["tests"] }
+        expect(tests[0]["name"]).to eq("RuntimeError: something else went wrong")
+        expect(data["testModules"][0]["moduleId"]).to eq("test/boom_test.rb")
+      end
+    end
+
+    it "does not overwrite an existing test.json" do
+      Dir.mktmpdir do |tmpdir|
+        real_tmpdir = File.realpath(tmpdir)
+        Dir.chdir(real_tmpdir) do
+          ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => real_tmpdir) do
+            json_path = File.join(real_tmpdir, default_data_dir, "test.json")
+            FileUtils.mkdir_p(File.dirname(json_path))
+            File.write(json_path, '{"existing":"results"}')
+
+            exc = build_load_error(
+              message: "cannot load such file -- my_class",
+              backtrace: ["./test/my_class_test.rb:3:in `require'"]
+            )
+            described_class.handle_load_error(exc)
+
+            expect(File.read(json_path)).to eq('{"existing":"results"}')
+          end
+        end
+      end
+    end
+  end
 end
