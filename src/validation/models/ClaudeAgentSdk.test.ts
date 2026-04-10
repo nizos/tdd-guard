@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ClaudeAgentSdk } from './ClaudeAgentSdk'
 import { Config } from '../../config/Config'
 import { IModelClient } from '../../contracts/types/ModelClient'
@@ -48,6 +48,12 @@ describe('ClaudeAgentSdk', () => {
 
     beforeEach(async () => {
       await client.ask(prompt)
+    })
+
+    afterEach(() => {
+      delete process.env.CLAUDECODE
+      delete process.env.SOME_OTHER_VAR
+      delete process.env.ANTHROPIC_API_KEY
     })
 
     test('calls queryFn with correct prompt', async () => {
@@ -121,8 +127,6 @@ describe('ClaudeAgentSdk', () => {
         'SOME_OTHER_VAR',
         'keep-me'
       )
-
-      delete process.env.SOME_OTHER_VAR
     })
 
     test('strips ANTHROPIC_API_KEY from env to prevent subscription bypass', async () => {
@@ -135,8 +139,6 @@ describe('ClaudeAgentSdk', () => {
       expect(freshSetup.getUsedOptions().env).not.toHaveProperty(
         'ANTHROPIC_API_KEY'
       )
-
-      delete process.env.ANTHROPIC_API_KEY
     })
   })
 

@@ -169,6 +169,11 @@ describe('ClaudeCli', () => {
   })
 
   describe('environment isolation', () => {
+    afterEach(() => {
+      delete process.env.ANTHROPIC_API_KEY
+      delete process.env.SOME_OTHER_VAR
+    })
+
     test('strips ANTHROPIC_API_KEY from subprocess environment', async () => {
       process.env.ANTHROPIC_API_KEY = 'sk-dummy-key'
 
@@ -176,8 +181,6 @@ describe('ClaudeCli', () => {
 
       expect(call.options.env).toBeDefined()
       expect(call.options.env).not.toHaveProperty('ANTHROPIC_API_KEY')
-
-      delete process.env.ANTHROPIC_API_KEY
     })
 
     test('preserves other environment variables when stripping ANTHROPIC_API_KEY', async () => {
@@ -187,9 +190,6 @@ describe('ClaudeCli', () => {
       const call = await sut.askAndGetCall()
 
       expect(call.options.env).toHaveProperty('SOME_OTHER_VAR', 'keep-me')
-
-      delete process.env.ANTHROPIC_API_KEY
-      delete process.env.SOME_OTHER_VAR
     })
   })
 
