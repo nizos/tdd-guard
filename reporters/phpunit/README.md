@@ -84,7 +84,6 @@ If not configured, the reporter will:
 
 ### Configuration Rules
 
-- Path must be absolute
 - Falls back to current directory if configuration is invalid
 
 ## More Information

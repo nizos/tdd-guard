@@ -28,19 +28,6 @@ final class PathValidatorTest extends TestCase
         $this->filesystem->remove($this->tempDir);
     }
 
-    public function testRejectsPathTraversal(): void
-    {
-        // Given: A path with directory traversal
-        $pathWithTraversal = $this->tempDir . '/../dangerous';
-
-        // Then: Should throw exception
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Configured project root is invalid');
-
-        // When: Validating the path
-        PathValidator::resolveProjectRoot($pathWithTraversal);
-    }
-
     public function testAllowsAncestorOfCurrentDirectory(): void
     {
         // Given: Working in a subdirectory
@@ -52,6 +39,44 @@ final class PathValidatorTest extends TestCase
         $result = PathValidator::resolveProjectRoot($this->tempDir);
 
         // Then: Should return the validated path
+        $this->assertEquals(realpath($this->tempDir), $result);
+    }
+
+    public function testAcceptsAbsolutePath(): void
+    {
+        // Given: Working in a directory
+        chdir($this->tempDir);
+
+        // When: Validating the current directory using its absolute path
+        $result = PathValidator::resolveProjectRoot($this->tempDir);
+
+        // Then: Should return the resolved absolute path
+        $this->assertEquals(realpath($this->tempDir), $result);
+    }
+
+    public function testAcceptsRelativePath(): void
+    {
+        // Given: Working in a directory
+        chdir($this->tempDir);
+
+        // When: Validating the current directory using a relative path
+        $result = PathValidator::resolveProjectRoot('.');
+
+        // Then: Should resolve and return the absolute path
+        $this->assertEquals(realpath($this->tempDir), $result);
+    }
+
+    public function testAcceptsPathContainingDotDot(): void
+    {
+        // Given: Working in a subdirectory
+        $subDir = $this->tempDir . '/subdir';
+        $this->filesystem->mkdir($subDir);
+        chdir($subDir);
+
+        // When: Validating a path that uses `..` to reach a valid ancestor
+        $result = PathValidator::resolveProjectRoot($subDir . '/..');
+
+        // Then: Should normalize and return the absolute path
         $this->assertEquals(realpath($this->tempDir), $result);
     }
 

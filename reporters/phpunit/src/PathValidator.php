@@ -36,14 +36,6 @@ final class PathValidator
             return null;
         }
 
-        if (!self::isAbsolutePath($path)) {
-            return null;
-        }
-
-        if (strpos($path, '..') !== false) {
-            return null;
-        }
-
         if (!is_dir($path)) {
             return null;
         }
@@ -75,14 +67,5 @@ final class PathValidator
         }
 
         return strpos($path, $potentialAncestor . DIRECTORY_SEPARATOR) === 0;
-    }
-
-    private static function isAbsolutePath(string $path): bool
-    {
-        if (PHP_OS_FAMILY === 'Windows') {
-            return preg_match('/^[a-zA-Z]:[\\\\\\/]/', $path) === 1;
-        }
-
-        return strpos($path, '/') === 0;
     }
 }
