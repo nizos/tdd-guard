@@ -36,8 +36,19 @@ describe('processHookData', () => {
   it('should throw error on invalid JSON', async () => {
     const invalidJson = '{ invalid json'
 
-    // For this test, we need to use processHookData directly since we're testing JSON parsing
     await expect(processHookData(invalidJson)).rejects.toThrow()
+  })
+
+  it('should handle invalid JSON escape sequences from PHP ANSI escape codes', async () => {
+    const storage = new MemoryStorage()
+    // Real-world case: Claude Code sends Edit hook data for a PHP file using \e for ANSI colors.
+    // \e is valid PHP but not a valid JSON escape sequence.
+    const rawInput = '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"src/Command/OutputCommand.php","old_string":"echo \\"Done\\";","new_string":"echo \\"\\e[32mDone\\e[0m\\";"}}'
+
+    const result = await processHookData(rawInput, { storage })
+
+    expect(result).toHaveProperty('decision')
+    expect(result).toHaveProperty('reason')
   })
 
   it('should save modifications content to storage when tool is Edit', async () => {

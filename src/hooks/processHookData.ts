@@ -1,5 +1,6 @@
 import { buildContext } from '../cli/buildContext'
 import { HookData, HookEvents } from './HookEvents'
+import { parseHookJson } from './parseHookJson'
 import { PostToolLintHandler } from './postToolLint'
 import { detectFileType, isTestFile, detectLanguage, type Language } from './fileTypeDetection'
 import { LinterProvider } from '../providers/LinterProvider'
@@ -55,8 +56,8 @@ export async function processHookData(
   inputData: string,
   deps: ProcessHookDataDeps = {}
 ): Promise<ValidationResult> {
-  const parsedData = JSON.parse(inputData)
-  
+  const parsedData = parseHookJson(inputData) as Record<string, unknown>
+
   // Initialize dependencies
   const storage = deps.storage ?? new FileStorage()
   const guardManager = new GuardManager(storage)

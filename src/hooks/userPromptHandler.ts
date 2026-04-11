@@ -1,4 +1,5 @@
 import { GuardManager } from '../guard/GuardManager'
+import { parseHookJson } from './parseHookJson'
 import { ValidationResult } from '../contracts/types/ValidationResult'
 
 export class UserPromptHandler {
@@ -13,15 +14,19 @@ export class UserPromptHandler {
   }
 
   async processUserCommand(hookData: string): Promise<ValidationResult | undefined> {
-    const data = JSON.parse(hookData)
+    const data = parseHookJson(hookData) as Record<string, unknown>
     
     // Only process UserPromptSubmit events
     if (data.hook_event_name !== 'UserPromptSubmit') {
       return undefined
     }
     
-    const command = data.prompt?.toLowerCase()
-    
+    if (typeof data.prompt !== 'string') {
+      return undefined
+    }
+
+    const command = data.prompt.toLowerCase()
+
     switch (command) {
       case this.GUARD_COMMANDS.ON:
         await this.guardManager.enable()

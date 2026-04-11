@@ -1,5 +1,6 @@
 import { Storage } from '../storage/Storage'
 import { FileStorage } from '../storage/FileStorage'
+import { parseHookJson } from './parseHookJson'
 import { SessionStartSchema } from '../contracts/schemas/toolSchemas'
 import { RULES } from '../validation/prompts/rules'
 
@@ -11,7 +12,7 @@ export class SessionHandler {
   }
 
   async processSessionStart(hookData: string): Promise<void> {
-    const parsedData = JSON.parse(hookData)
+    const parsedData = parseHookJson(hookData)
     const sessionStartResult = SessionStartSchema.safeParse(parsedData)
     
     if (!sessionStartResult.success) {
