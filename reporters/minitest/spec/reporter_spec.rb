@@ -106,6 +106,7 @@ RSpec.describe TddGuardMinitest::Reporter do
         create_reporter_in(tmpdir) do |reporter, storage_dir|
           data = run_and_read_json(reporter, storage_dir)
           expect(data["testModules"]).to eq([])
+          expect(data["reason"]).to eq("passed")
         end
       end
     end
@@ -138,6 +139,72 @@ RSpec.describe TddGuardMinitest::Reporter do
           service_module = data["testModules"].find { |m| m["moduleId"] == "test/service_test.rb" }
           expect(service_module["tests"].length).to eq(1)
           expect(service_module["tests"][0]["name"]).to eq("test_other")
+        end
+      end
+    end
+  end
+
+  describe "reason field" do
+    it "reports passed when all tests pass" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          %w[test_one test_two].each do |name|
+            reporter.record(
+              build_result(
+                name: name,
+                klass: "MyClassTest",
+                source_location: ["./test/my_class_test.rb", 5]
+              )
+            )
+          end
+
+          data = run_and_read_json(reporter, storage_dir)
+          expect(data["reason"]).to eq("passed")
+        end
+      end
+    end
+
+    it "reports failed when one test fails" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          reporter.record(
+            build_result(
+              name: "test_passes",
+              klass: "MyClassTest",
+              source_location: ["./test/my_class_test.rb", 5]
+            )
+          )
+          reporter.record(
+            build_result(
+              name: "test_fails",
+              klass: "MyClassTest",
+              source_location: ["./test/my_class_test.rb", 10],
+              failures: [build_assertion_failure(message: "expected true")]
+            )
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          expect(data["reason"]).to eq("failed")
+        end
+      end
+    end
+
+    it "reports failed when all tests fail" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          %w[test_one test_two].each do |name|
+            reporter.record(
+              build_result(
+                name: name,
+                klass: "MyClassTest",
+                source_location: ["./test/my_class_test.rb", 5],
+                failures: [build_assertion_failure(message: "error")]
+              )
+            )
+          end
+
+          data = run_and_read_json(reporter, storage_dir)
+          expect(data["reason"]).to eq("failed")
         end
       end
     end

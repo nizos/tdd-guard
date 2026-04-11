@@ -70,7 +70,11 @@ module TddGuardMinitest
         modules_map[module_path]["tests"] << test
       end
 
-      result = { "testModules" => modules_map.values }
+      has_failures = @test_results.any? { |t| t["state"] == "failed" }
+      result = {
+        "testModules" => modules_map.values,
+        "reason" => has_failures ? "failed" : "passed"
+      }
 
       FileUtils.mkdir_p(@storage_dir)
       File.write(File.join(@storage_dir, "test.json"), JSON.pretty_generate(result))
