@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/nizos/tdd-guard/reporters/go/internal/storage"
@@ -41,48 +42,91 @@ func TestProcess(t *testing.T) {
 				t.Fatalf("Expected output to contain transformed test state, got: %s", data)
 			}
 		})
+	})
 
-		t.Run("accepts project root equal to current directory", func(t *testing.T) {
-			cwd, _ := os.Getwd()
-
-			err := runProcess(t, cwd)
+	t.Run("project root resolution", func(t *testing.T) {
+		t.Run("accepts absolute path", func(t *testing.T) {
+			err := runProcess(t, tempDir)
 			if err != nil {
-				t.Fatalf("Expected no error when project root equals cwd, got: %v", err)
+				t.Fatalf("Expected no error for absolute path, got: %v", err)
 			}
-
-			assertFileExists(t, cwd)
+			assertFileExists(t, tempDir)
 		})
 
-		t.Run("accepts project root as ancestor of current directory", func(t *testing.T) {
-			// Create a subdirectory and change to it
-			subDir := filepath.Join(tempDir, "subdir")
+		t.Run("accepts relative path", func(t *testing.T) {
+			subDir := filepath.Join(tempDir, "reltest")
 			os.MkdirAll(subDir, 0755)
 			oldCwd, _ := os.Getwd()
 			os.Chdir(subDir)
 			defer os.Chdir(oldCwd)
 
-			// Use tempDir (parent) as project root
+			err := runProcess(t, ".")
+			if err != nil {
+				t.Fatalf("Expected no error for relative path, got: %v", err)
+			}
+			assertFileExists(t, subDir)
+		})
+
+		t.Run("accepts path containing ..", func(t *testing.T) {
+			subDir := filepath.Join(tempDir, "dotdot")
+			os.MkdirAll(subDir, 0755)
+			oldCwd, _ := os.Getwd()
+			os.Chdir(subDir)
+			defer os.Chdir(oldCwd)
+
+			err := runProcess(t, filepath.Join(subDir, ".."))
+			if err != nil {
+				t.Fatalf("Expected no error for path with .., got: %v", err)
+			}
+			assertFileExists(t, tempDir)
+		})
+
+		t.Run("accepts path equal to current directory", func(t *testing.T) {
+			cwd, _ := os.Getwd()
+			err := runProcess(t, cwd)
+			if err != nil {
+				t.Fatalf("Expected no error when project root equals cwd, got: %v", err)
+			}
+			assertFileExists(t, cwd)
+		})
+
+		t.Run("accepts ancestor of current directory", func(t *testing.T) {
+			subDir := filepath.Join(tempDir, "ancestor")
+			os.MkdirAll(subDir, 0755)
+			oldCwd, _ := os.Getwd()
+			os.Chdir(subDir)
+			defer os.Chdir(oldCwd)
+
 			err := runProcess(t, tempDir)
 			if err != nil {
 				t.Fatalf("Expected no error when project root is ancestor, got: %v", err)
 			}
-
 			assertFileExists(t, tempDir)
 		})
-	})
 
-	t.Run("project root validation", func(t *testing.T) {
-		t.Run("rejects relative project root", func(t *testing.T) {
-			err := runProcess(t, "../relative/path")
-			assertErrorContains(t, err, "project root must be an absolute path")
-		})
-
-		t.Run("rejects project root outside current directory", func(t *testing.T) {
+		t.Run("rejects path outside current directory", func(t *testing.T) {
 			outsideRoot := filepath.Join(filepath.Dir(tempDir), "outside")
 			os.MkdirAll(outsideRoot, 0755)
 
 			err := runProcess(t, outsideRoot)
 			assertErrorContains(t, err, "current directory must be within project root")
+		})
+
+		t.Run("returns error when current directory is unavailable", func(t *testing.T) {
+			doomed := filepath.Join(tempDir, "doomed")
+			os.MkdirAll(doomed, 0755)
+			oldCwd, _ := os.Getwd()
+			os.Chdir(doomed)
+			defer os.Chdir(oldCwd)
+			os.RemoveAll(doomed)
+
+			err := runProcess(t, tempDir)
+			if err == nil {
+				t.Fatal("Expected error when current directory is unavailable")
+			}
+			if !strings.Contains(err.Error(), "cannot determine current directory") {
+				t.Fatalf("Expected error about current directory, got: %v", err)
+			}
 		})
 	})
 

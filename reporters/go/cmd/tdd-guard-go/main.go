@@ -21,7 +21,7 @@ import (
 
 func main() {
 	var projectRoot string
-	flag.StringVar(&projectRoot, "project-root", "", "Project root directory (absolute path)")
+	flag.StringVar(&projectRoot, "project-root", "", "Project root directory")
 	flag.Parse()
 
 	if err := process(os.Stdin, projectRoot, os.Stdout); err != nil {
@@ -30,7 +30,8 @@ func main() {
 }
 
 func process(input io.Reader, projectRoot string, output io.Writer) error {
-	if err := validateProjectRoot(projectRoot); err != nil {
+	resolvedRoot, err := resolveProjectRoot(projectRoot)
+	if err != nil {
 		return err
 	}
 
@@ -60,7 +61,7 @@ func process(input io.Reader, projectRoot string, output io.Writer) error {
 	t := transformer.NewTransformer()
 	result := t.Transform(results, p, mixedReader.CompilationError)
 
-	s := storage.NewStorage(projectRoot)
+	s := storage.NewStorage(resolvedRoot)
 	return s.Save(result)
 }
 
@@ -86,21 +87,22 @@ func formatAndOutput(input io.Reader, output io.Writer) {
 	}
 }
 
-func validateProjectRoot(projectRoot string) error {
-	if projectRoot == "" {
-		return nil
+func resolveProjectRoot(projectRoot string) (string, error) {
+	resolved, err := filepath.Abs(projectRoot)
+	if err != nil {
+		return "", fmt.Errorf("cannot resolve project root: %w", err)
 	}
 
-	if !filepath.IsAbs(projectRoot) {
-		return errors.New("project root must be an absolute path")
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("cannot determine current directory: %w", err)
 	}
 
-	cwd, _ := os.Getwd()
-	if !strings.HasPrefix(cwd, projectRoot) {
-		return errors.New("current directory must be within project root")
+	if !strings.HasPrefix(cwd, resolved) {
+		return "", errors.New("current directory must be within project root")
 	}
 
-	return nil
+	return resolved, nil
 }
 
 func parseTestResults(mixedReader *parser.MixedReader) (parser.Results, *parser.Parser, error) {
