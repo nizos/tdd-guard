@@ -38,7 +38,7 @@ Alternatively, set the `TDD_GUARD_PROJECT_ROOT` environment variable. The CLI fl
 ### Configuration Rules
 
 - Project root must be configured via `-project-root` flag or `TDD_GUARD_PROJECT_ROOT` environment variable
-- Current directory must be within the configured project root
+- Tests must be run from somewhere within the project root directory
 - Relative paths are supported but resolve against the working directory at runtime — if tests may run from different directories, use an absolute path to ensure results are always written to the correct location
 
 ### Makefile Integration
