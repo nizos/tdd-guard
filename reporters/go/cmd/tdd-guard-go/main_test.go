@@ -54,11 +54,7 @@ func TestProcess(t *testing.T) {
 		})
 
 		t.Run("accepts relative path", func(t *testing.T) {
-			subDir := filepath.Join(tempDir, "reltest")
-			os.MkdirAll(subDir, 0755)
-			oldCwd, _ := os.Getwd()
-			os.Chdir(subDir)
-			defer os.Chdir(oldCwd)
+			subDir := chdirToSubDir(t, tempDir, "reltest")
 
 			err := runProcess(t, ".")
 			if err != nil {
@@ -68,11 +64,7 @@ func TestProcess(t *testing.T) {
 		})
 
 		t.Run("accepts path containing ..", func(t *testing.T) {
-			subDir := filepath.Join(tempDir, "dotdot")
-			os.MkdirAll(subDir, 0755)
-			oldCwd, _ := os.Getwd()
-			os.Chdir(subDir)
-			defer os.Chdir(oldCwd)
+			subDir := chdirToSubDir(t, tempDir, "dotdot")
 
 			err := runProcess(t, filepath.Join(subDir, ".."))
 			if err != nil {
@@ -91,11 +83,7 @@ func TestProcess(t *testing.T) {
 		})
 
 		t.Run("accepts ancestor of current directory", func(t *testing.T) {
-			subDir := filepath.Join(tempDir, "ancestor")
-			os.MkdirAll(subDir, 0755)
-			oldCwd, _ := os.Getwd()
-			os.Chdir(subDir)
-			defer os.Chdir(oldCwd)
+			chdirToSubDir(t, tempDir, "ancestor")
 
 			err := runProcess(t, tempDir)
 			if err != nil {
@@ -113,20 +101,11 @@ func TestProcess(t *testing.T) {
 		})
 
 		t.Run("returns error when current directory is unavailable", func(t *testing.T) {
-			doomed := filepath.Join(tempDir, "doomed")
-			os.MkdirAll(doomed, 0755)
-			oldCwd, _ := os.Getwd()
-			os.Chdir(doomed)
-			defer os.Chdir(oldCwd)
-			os.RemoveAll(doomed)
+			subDir := chdirToSubDir(t, tempDir, "doomed")
+			os.RemoveAll(subDir)
 
 			err := runProcess(t, tempDir)
-			if err == nil {
-				t.Fatal("Expected error when current directory is unavailable")
-			}
-			if !strings.Contains(err.Error(), "cannot determine current directory") {
-				t.Fatalf("Expected error about current directory, got: %v", err)
-			}
+			assertErrorContains(t, err, "cannot determine current directory")
 		})
 	})
 
@@ -303,9 +282,19 @@ func assertFileExists(t *testing.T, projectRoot string) {
 
 func assertErrorContains(t *testing.T, err error, expected string) {
 	t.Helper()
-	if err == nil || err.Error() != expected {
-		t.Fatalf("Expected error '%s', got: %v", expected, err)
+	if err == nil || !strings.Contains(err.Error(), expected) {
+		t.Fatalf("Expected error containing '%s', got: %v", expected, err)
 	}
+}
+
+func chdirToSubDir(t *testing.T, parent string, name string) string {
+	t.Helper()
+	subDir := filepath.Join(parent, name)
+	os.MkdirAll(subDir, 0755)
+	oldCwd, _ := os.Getwd()
+	os.Chdir(subDir)
+	t.Cleanup(func() { os.Chdir(oldCwd) })
+	return subDir
 }
 
 func getTestFilePath(projectRoot string) string {
