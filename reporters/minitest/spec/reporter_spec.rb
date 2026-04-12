@@ -210,6 +210,132 @@ RSpec.describe TddGuardMinitest::Reporter do
     end
   end
 
+  describe "stack field" do
+    it "includes first relevant test line from backtrace" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          failure = build_assertion_failure(
+            message: "expected true",
+            backtrace: [
+              "./test/my_class_test.rb:5:in `block (2 levels) in <top (required)>'",
+              "/path/to/gems/minitest-5.27.0/lib/minitest/test.rb:98:in `instance_exec'"
+            ]
+          )
+          reporter.record(
+            build_result(name: "test_fails", klass: "MyClassTest",
+                         source_location: ["./test/my_class_test.rb", 5],
+                         failures: [failure])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          expect(tests[0]["errors"][0]["stack"]).to eq("test/my_class_test.rb:5:in `block (2 levels) in <top (required)>'")
+        end
+      end
+    end
+
+    it "excludes stack when backtrace contains only gem frames" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          failure = build_assertion_failure(
+            message: "expected true",
+            backtrace: [
+              "/path/to/gems/minitest-5.27.0/lib/minitest/test.rb:98:in `instance_exec'",
+              "/path/to/gems/minitest-5.27.0/lib/minitest/runner.rb:121:in `run_specs'"
+            ]
+          )
+          reporter.record(
+            build_result(name: "test_fails", klass: "MyClassTest", failures: [failure])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          expect(tests[0]["errors"][0]).not_to have_key("stack")
+        end
+      end
+    end
+
+    it "excludes stack when backtrace is nil" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          failure = build_assertion_failure(message: "expected true")
+          reporter.record(
+            build_result(name: "test_fails", klass: "MyClassTest", failures: [failure])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          expect(tests[0]["errors"][0]).not_to have_key("stack")
+        end
+      end
+    end
+
+    it "strips leading ./ from stack frame" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          failure = build_assertion_failure(
+            message: "error",
+            backtrace: ["./test/foo_test.rb:10:in `block'"]
+          )
+          reporter.record(
+            build_result(name: "test_fails", klass: "FooTest", failures: [failure])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          expect(tests[0]["errors"][0]["stack"]).to start_with("test/foo_test.rb")
+        end
+      end
+    end
+
+    it "extracts test line from absolute path backtrace" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          failure = build_assertion_failure(
+            message: "error",
+            backtrace: [
+              "/path/to/gems/minitest-5.27.0/lib/minitest.rb:110:in `block'",
+              "/private/tmp/my-project/test/calc_test.rb:3:in `block (2 levels) in <top (required)>'"
+            ]
+          )
+          reporter.record(
+            build_result(name: "test_fails", klass: "CalcTest", failures: [failure])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          expect(tests[0]["errors"][0]["stack"]).to eq("test/calc_test.rb:3:in `block (2 levels) in <top (required)>'")
+        end
+      end
+    end
+
+    it "unwraps UnexpectedError to use original exception message and backtrace" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          unexpected = build_unexpected_error(
+            error_class: RuntimeError,
+            message: "something broke",
+            backtrace: [
+              "./test/widget_test.rb:8:in `test_boom'",
+              "/path/to/gems/minitest-5.27.0/lib/minitest/test.rb:98:in `run'"
+            ]
+          )
+          reporter.record(
+            build_result(name: "test_boom", klass: "WidgetTest",
+                         source_location: ["./test/widget_test.rb", 8],
+                         failures: [unexpected])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          error = tests[0]["errors"][0]
+          expect(error["message"]).to eq("something broke")
+          expect(error["stack"]).to eq("test/widget_test.rb:8:in `test_boom'")
+        end
+      end
+    end
+  end
+
   describe "name extraction" do
     it "uses result.name as name" do
       Dir.mktmpdir do |tmpdir|

@@ -54,9 +54,7 @@ module TddGuardMinitest
       }
 
       if state == "failed" && result.failures.any?
-        test["errors"] = result.failures.map do |failure|
-          { "message" => failure.message }
-        end
+        test["errors"] = result.failures.map { |failure| build_error(failure) }
       end
 
       @test_results << test
@@ -85,6 +83,30 @@ module TddGuardMinitest
     end
 
     private
+
+    def build_error(failure)
+      if failure.is_a?(Minitest::UnexpectedError)
+        exception = failure.error
+        error = { "message" => exception.message }
+        stack = extract_relevant_stack(exception.backtrace)
+      else
+        error = { "message" => failure.message }
+        stack = extract_relevant_stack(failure.backtrace)
+      end
+      error["stack"] = stack if stack
+      error
+    end
+
+    def extract_relevant_stack(backtrace)
+      return nil unless backtrace
+
+      frame = backtrace.find do |line|
+        (line.include?("test/") || line.include?("spec/")) && !line.include?("/gems/")
+      end
+      return nil unless frame
+
+      frame.sub(%r{^.*/(?=test/|spec/)}, "").sub(%r{^\./}, "")
+    end
 
     def extract_file_path(result)
       source = result.source_location
