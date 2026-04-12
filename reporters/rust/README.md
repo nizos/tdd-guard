@@ -31,13 +31,13 @@ The reporter works as a filter that processes test output while passing it throu
 ### With cargo-nextest (Recommended)
 
 ```bash
-cargo nextest run 2>&1 | tdd-guard-rust --project-root /absolute/path/to/project
+cargo nextest run 2>&1 | tdd-guard-rust --project-root path/to/project
 ```
 
 ### With cargo test
 
 ```bash
-cargo test -- -Z unstable-options --format json 2>&1 | tdd-guard-rust --project-root /absolute/path/to/project
+cargo test -- -Z unstable-options --format json 2>&1 | tdd-guard-rust --project-root path/to/project
 ```
 
 ### Direct Execution
@@ -46,11 +46,11 @@ The reporter can also execute tests directly:
 
 ```bash
 # Auto-detect runner (prefers nextest)
-tdd-guard-rust --project-root /absolute/path/to/project
+tdd-guard-rust --project-root path/to/project
 
 # Force specific runner
-tdd-guard-rust --project-root /absolute/path/to/project --runner nextest
-tdd-guard-rust --project-root /absolute/path/to/project --runner cargo
+tdd-guard-rust --project-root path/to/project --runner nextest
+tdd-guard-rust --project-root path/to/project --runner cargo
 ```
 
 ## Makefile Integration
@@ -71,13 +71,13 @@ test-tdd:
 
 ### Project Root
 
-The `--project-root` flag must be an absolute path to your project directory. This is where the `.claude/tdd-guard/data/test.json` file will be written.
+The `--project-root` flag sets the project root directory. Test results are written to `.claude/tdd-guard/data/test.json` relative to this path. If omitted, defaults to the current working directory.
 
 ### Flags
 
 - `--passthrough`: Force passthrough mode even if stdin is a terminal
 - `--runner [auto|nextest|cargo]`: Choose test runner for direct execution (default: auto)
-- `--project-root`: Absolute path to project directory (required)
+- `--project-root`: Path to project root directory (defaults to current working directory)
 
 ## How It Works
 
