@@ -88,6 +88,13 @@ func formatAndOutput(input io.Reader, output io.Writer) {
 }
 
 func resolveProjectRoot(projectRoot string) (string, error) {
+	if projectRoot == "" {
+		projectRoot = os.Getenv("TDD_GUARD_PROJECT_ROOT")
+	}
+	if projectRoot == "" {
+		return "", errors.New("project root must be configured via -project-root flag or TDD_GUARD_PROJECT_ROOT environment variable")
+	}
+
 	resolved, err := filepath.Abs(projectRoot)
 	if err != nil {
 		return "", fmt.Errorf("cannot resolve project root: %w", err)

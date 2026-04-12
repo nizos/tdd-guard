@@ -31,10 +31,15 @@ For projects where tests run in subdirectories, specify the project root:
 go test -json ./... 2>&1 | tdd-guard-go -project-root path/to/project/root
 ```
 
+### Environment Variable
+
+Alternatively, set the `TDD_GUARD_PROJECT_ROOT` environment variable. The CLI flag takes precedence if both are provided.
+
 ### Configuration Rules
 
+- Project root must be configured via `-project-root` flag or `TDD_GUARD_PROJECT_ROOT` environment variable
 - Current directory must be within the configured project root
-- Falls back to current directory if not specified
+- Relative paths are supported but resolve against the working directory at runtime — if tests may run from different directories, use an absolute path to ensure results are always written to the correct location
 
 ### Makefile Integration
 

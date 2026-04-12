@@ -21,8 +21,18 @@ func TestProcess(t *testing.T) {
 	})
 
 	t.Run("without project root", func(t *testing.T) {
-		t.Run("creates output file", func(t *testing.T) {
-			runProcess(t, "")
+		t.Run("errors when no project root is configured", func(t *testing.T) {
+			err := runProcess(t, "")
+			assertErrorContains(t, err, "project root must be configured")
+		})
+
+		t.Run("uses TDD_GUARD_PROJECT_ROOT env var as fallback", func(t *testing.T) {
+			t.Setenv("TDD_GUARD_PROJECT_ROOT", tempDir)
+
+			err := runProcess(t, "")
+			if err != nil {
+				t.Fatalf("Expected no error with env var set, got: %v", err)
+			}
 			assertFileExists(t, tempDir)
 		})
 	})
