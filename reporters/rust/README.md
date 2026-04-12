@@ -71,13 +71,19 @@ test-tdd:
 
 ### Project Root
 
-The `--project-root` flag sets the project root directory. Test results are written to `.claude/tdd-guard/data/test.json` relative to this path. If omitted, defaults to the current working directory.
+The `--project-root` flag sets the project root directory. Test results are written to `.claude/tdd-guard/data/test.json` relative to this path. Alternatively, set the `TDD_GUARD_PROJECT_ROOT` environment variable. The CLI flag takes precedence if both are provided.
+
+### Configuration Rules
+
+- Project root must be configured via `--project-root` flag or `TDD_GUARD_PROJECT_ROOT` environment variable
+- Tests must be run from somewhere within the project root directory
+- Relative paths are supported but resolve against the working directory at runtime — if tests may run from different directories, use an absolute path to ensure results are always written to the correct location
 
 ### Flags
 
 - `--passthrough`: Force passthrough mode even if stdin is a terminal
 - `--runner [auto|nextest|cargo]`: Choose test runner for direct execution (default: auto)
-- `--project-root`: Path to project root directory (defaults to current working directory)
+- `--project-root`: Path to project root directory
 
 ## How It Works
 

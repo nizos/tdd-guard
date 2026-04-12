@@ -212,17 +212,22 @@ fn process_output(
 }
 
 fn resolve_project_root(project_root: Option<&str>, base_dir: &Path) -> io::Result<PathBuf> {
-    let path = match project_root {
-        Some(root) => {
-            let p = PathBuf::from(root);
-            if p.is_absolute() {
-                p
-            } else {
-                base_dir.join(p)
-            }
-        }
-        None => base_dir.to_path_buf(),
-    };
+    let env_root = std::env::var("TDD_GUARD_PROJECT_ROOT")
+        .ok()
+        .filter(|s| !s.is_empty());
+    let root_str = project_root
+        .map(|s| s.to_string())
+        .or(env_root)
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "project root must be configured via --project-root flag or TDD_GUARD_PROJECT_ROOT environment variable",
+            )
+        })?;
+    let root = root_str.as_str();
+
+    let p = PathBuf::from(root);
+    let path = if p.is_absolute() { p } else { base_dir.join(p) };
     path.canonicalize()
 }
 
@@ -305,14 +310,36 @@ mod tests {
     }
 
     #[test]
-    fn test_run_defaults_to_cwd_without_project_root() {
+    fn test_run_uses_env_var_as_fallback() {
+        let ctx = TestContext::setup();
+
+        std::env::set_var("TDD_GUARD_PROJECT_ROOT", ctx.project_root.to_str().unwrap());
+        let args = TestContext::make_args(None);
+        let result = run(&args, &ctx.project_root);
+        std::env::remove_var("TDD_GUARD_PROJECT_ROOT");
+
+        assert!(
+            result.is_ok(),
+            "Expected success with env var, got: {:?}",
+            result.err()
+        );
+        assert!(TestContext::test_json_path(&ctx.project_root).exists());
+    }
+
+    #[test]
+    fn test_run_errors_when_no_project_root_configured() {
         let ctx = TestContext::setup();
 
         let args = TestContext::make_args(None);
         let result = run(&args, &ctx.project_root);
 
-        assert!(result.is_ok(), "Expected success, got: {:?}", result.err());
-        assert!(TestContext::test_json_path(&ctx.project_root).exists());
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("project root must be configured"),
+            "Expected error about missing config, got: {}",
+            err
+        );
     }
 
     #[test]
@@ -344,12 +371,11 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_defaults_to_base_dir_when_none() {
+    fn test_resolve_errors_when_none() {
         let ctx = TestContext::setup();
 
         let result = resolve_project_root(None, &ctx.project_root);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), ctx.project_root.canonicalize().unwrap());
+        assert!(result.is_err());
     }
 
     #[test]
