@@ -249,7 +249,7 @@ fn detect_runner(preference: &str) -> String {
         "auto" => {
             // Check if nextest is available (cache this in real impl)
             if Command::new("cargo")
-                .args(&["nextest", "--version"])
+                .args(["nextest", "--version"])
                 .output()
                 .map(|output| output.status.success())
                 .unwrap_or(false)
