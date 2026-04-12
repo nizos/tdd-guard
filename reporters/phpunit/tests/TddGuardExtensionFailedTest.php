@@ -161,7 +161,9 @@ class ErrorTest extends TestCase
          bootstrap="' . dirname(__DIR__) . '/vendor/autoload.php"
          colors="true">
   <extensions>
-    <bootstrap class="TddGuard\\PHPUnit\\TddGuardExtension"/>
+    <bootstrap class="TddGuard\\PHPUnit\\TddGuardExtension">
+      <parameter name="projectRoot" value="' . $this->tempDir . '"/>
+    </bootstrap>
   </extensions>
   <testsuites>
     <testsuite name="test">

@@ -80,6 +80,19 @@ final class PathValidatorTest extends TestCase
         $this->assertEquals(realpath($this->tempDir), $result);
     }
 
+    public function testErrorsWhenNoProjectRootConfigured(): void
+    {
+        // Given: No project root configured and no env var set
+        putenv('TDD_GUARD_PROJECT_ROOT');
+
+        // Then: Should throw exception
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('project root must be configured');
+
+        // When: Resolving with empty string
+        PathValidator::resolveProjectRoot('');
+    }
+
     public function testRejectsNonAncestorDirectory(): void
     {
         // Given: Two sibling directories

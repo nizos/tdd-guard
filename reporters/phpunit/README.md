@@ -76,15 +76,11 @@ Use the `projectRoot` parameter in your `phpunit.xml` (see examples above).
 export TDD_GUARD_PROJECT_ROOT=/absolute/path/to/project/root
 ```
 
-**Option 3: Automatic Detection**
-
-If not configured, the reporter will:
-- Use the directory containing `phpunit.xml`
-- Fall back to current working directory
-
 ### Configuration Rules
 
-- Falls back to current directory if configuration is invalid
+- Project root must be configured via the `projectRoot` parameter or `TDD_GUARD_PROJECT_ROOT` environment variable
+- Tests must be run from somewhere within the project root directory
+- Relative paths are supported but resolve against the working directory at runtime — if tests may run from different directories, use an absolute path to ensure results are always written to the correct location
 
 ## More Information
 

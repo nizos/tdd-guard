@@ -27,7 +27,9 @@ final class PathValidator
             return $validated;
         }
 
-        return getcwd();
+        throw new \InvalidArgumentException(
+            'project root must be configured via projectRoot parameter or TDD_GUARD_PROJECT_ROOT environment variable'
+        );
     }
 
     private static function validateProjectRoot(string $path): ?string
