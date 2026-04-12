@@ -18,14 +18,12 @@ module TddGuardMinitest
 
     # Writes a synthetic failed-test JSON for an exception raised before
     # Minitest had a chance to run (typically a LoadError from a missing
-    # require at the top of a test file). Called from lib/tdd_guard_minitest/
-    # autorun.rb's at_exit hook when $! is set.
+    # require at the top of a test file). Called from the autorun entry
+    # point's at_exit hook when $! is set.
     #
-    # Mirrors the structure of the RSpec reporter's load-error handling
-    # (see reporters/rspec/lib/tdd_guard_rspec/formatter.rb): inject a
-    # synthetic entry into @test_results, then write the JSON. Skips if
-    # test.json already exists to avoid clobbering real results written
-    # by any earlier at_exit block.
+    # Injects a synthetic entry into @test_results and writes the JSON
+    # through the normal report path. Skips if test.json already exists
+    # to avoid clobbering real results.
     def self.handle_load_error(exception)
       new(StringIO.new).handle_load_error(exception)
     end
@@ -34,7 +32,7 @@ module TddGuardMinitest
       return if File.exist?(File.join(@storage_dir, "test.json"))
 
       add_load_error(exception)
-      write_load_error_result
+      report
     end
 
     def record(result)
@@ -117,8 +115,7 @@ module TddGuardMinitest
     end
 
     # Injects a synthetic failed test entry derived from an exception raised
-    # before Minitest could run. Mirrors RSpec's `add_load_error_results`
-    # (reporters/rspec/lib/tdd_guard_rspec/formatter.rb).
+    # before Minitest could run.
     def add_load_error(exception)
       frame = first_user_frame(exception.backtrace)
       file_path = frame ? frame.split(":", 2).first.to_s.sub(%r{^\./}, "") : "unknown"
@@ -146,26 +143,6 @@ module TddGuardMinitest
       return header unless frame
 
       "#{header}\n    #{frame.sub(%r{^\./}, '')}"
-    end
-
-    # Writes the synthetic load-error JSON. Inlined here (rather than reusing
-    # the public `report` method) so that this PR does not need to change
-    # `report`'s signature -- the `reason` field is added by a separate issue.
-    def write_load_error_result
-      modules_map = {}
-      @test_results.each do |test|
-        module_path = test["fullName"].split("::").first
-        modules_map[module_path] ||= { "moduleId" => module_path, "tests" => [] }
-        modules_map[module_path]["tests"] << test
-      end
-
-      result = {
-        "testModules" => modules_map.values,
-        "reason" => "failed"
-      }
-
-      FileUtils.mkdir_p(@storage_dir)
-      File.write(File.join(@storage_dir, "test.json"), JSON.pretty_generate(result))
     end
   end
 end
