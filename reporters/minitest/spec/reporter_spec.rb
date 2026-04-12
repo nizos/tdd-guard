@@ -208,6 +208,86 @@ RSpec.describe TddGuardMinitest::Reporter do
         end
       end
     end
+
+    it "reports interrupted when fewer results than expected" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          reporter.instance_variable_set(:@expected_count, 5)
+
+          %w[test_one test_two].each do |name|
+            reporter.record(
+              build_result(
+                name: name,
+                klass: "MyClassTest",
+                source_location: ["./test/my_class_test.rb", 5]
+              )
+            )
+          end
+
+          data = run_and_read_json(reporter, storage_dir)
+          expect(data["reason"]).to eq("interrupted")
+        end
+      end
+    end
+
+    it "reports failed not interrupted when failures exist with fewer results" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          reporter.instance_variable_set(:@expected_count, 5)
+
+          reporter.record(
+            build_result(
+              name: "test_passes",
+              klass: "MyClassTest",
+              source_location: ["./test/my_class_test.rb", 5]
+            )
+          )
+          reporter.record(
+            build_result(
+              name: "test_fails",
+              klass: "MyClassTest",
+              source_location: ["./test/my_class_test.rb", 10],
+              failures: [build_assertion_failure(message: "expected true")]
+            )
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          expect(data["reason"]).to eq("failed")
+        end
+      end
+    end
+
+    it "reports passed when all expected tests complete" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          reporter.instance_variable_set(:@expected_count, 2)
+
+          %w[test_one test_two].each do |name|
+            reporter.record(
+              build_result(
+                name: name,
+                klass: "MyClassTest",
+                source_location: ["./test/my_class_test.rb", 5]
+              )
+            )
+          end
+
+          data = run_and_read_json(reporter, storage_dir)
+          expect(data["reason"]).to eq("passed")
+        end
+      end
+    end
+
+    it "reports passed when expected count is zero" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          reporter.instance_variable_set(:@expected_count, 0)
+
+          data = run_and_read_json(reporter, storage_dir)
+          expect(data["reason"]).to eq("passed")
+        end
+      end
+    end
   end
 
   describe "stack field" do

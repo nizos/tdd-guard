@@ -13,7 +13,13 @@ module TddGuardMinitest
     def initialize(io = $stdout, options = {})
       super
       @test_results = []
+      @expected_count = 0
       @storage_dir = determine_storage_dir
+    end
+
+    def start
+      super
+      @expected_count = compute_expected_count
     end
 
     # Writes a synthetic failed-test JSON for an exception raised before
@@ -67,9 +73,16 @@ module TddGuardMinitest
       end
 
       has_failures = @test_results.any? { |t| t["state"] == "failed" }
+      reason = if has_failures
+                 "failed"
+               elsif @expected_count > 0 && @test_results.length < @expected_count
+                 "interrupted"
+               else
+                 "passed"
+               end
       result = {
         "testModules" => modules_map.values,
-        "reason" => has_failures ? "failed" : "passed"
+        "reason" => reason
       }
 
       FileUtils.mkdir_p(@storage_dir)
@@ -81,6 +94,17 @@ module TddGuardMinitest
     end
 
     private
+
+    def compute_expected_count
+      filter = options[:filter]
+      Minitest::Runnable.runnables.sum do |klass|
+        if filter
+          klass.methods_matching(filter).size
+        else
+          klass.runnable_methods.size
+        end
+      end
+    end
 
     def build_error(failure)
       if failure.is_a?(Minitest::UnexpectedError)
