@@ -219,8 +219,18 @@ fn process_output(
     Ok(())
 }
 
-fn resolve_project_root(project_root: Option<&str>) -> io::Result<PathBuf> {
-    let path = PathBuf::from(project_root.unwrap_or("."));
+fn resolve_project_root(project_root: Option<&str>, base_dir: &Path) -> io::Result<PathBuf> {
+    let path = match project_root {
+        Some(root) => {
+            let p = PathBuf::from(root);
+            if p.is_absolute() {
+                p
+            } else {
+                base_dir.join(p)
+            }
+        }
+        None => base_dir.to_path_buf(),
+    };
     path.canonicalize()
 }
 
@@ -294,7 +304,7 @@ mod tests {
     #[test]
     fn test_resolve_accepts_absolute_path() {
         let temp_dir = TempDir::new().unwrap();
-        let result = resolve_project_root(Some(temp_dir.path().to_str().unwrap()));
+        let result = resolve_project_root(Some(temp_dir.path().to_str().unwrap()), temp_dir.path());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), temp_dir.path().canonicalize().unwrap());
     }
@@ -304,12 +314,8 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let sub_dir = temp_dir.path().join("reltest");
         fs::create_dir_all(&sub_dir).unwrap();
-        let original_dir = std::env::current_dir().unwrap();
-        std::env::set_current_dir(&sub_dir).unwrap();
 
-        let result = resolve_project_root(Some("."));
-        std::env::set_current_dir(&original_dir).unwrap();
-
+        let result = resolve_project_root(Some("."), &sub_dir);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), sub_dir.canonicalize().unwrap());
     }
@@ -319,26 +325,18 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let sub_dir = temp_dir.path().join("dotdot");
         fs::create_dir_all(&sub_dir).unwrap();
-        let original_dir = std::env::current_dir().unwrap();
-        std::env::set_current_dir(&sub_dir).unwrap();
 
         let input = sub_dir.join("..").to_str().unwrap().to_string();
-        let result = resolve_project_root(Some(&input));
-        std::env::set_current_dir(&original_dir).unwrap();
-
+        let result = resolve_project_root(Some(&input), &sub_dir);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), temp_dir.path().canonicalize().unwrap());
     }
 
     #[test]
-    fn test_resolve_defaults_to_cwd_when_none() {
+    fn test_resolve_defaults_to_base_dir_when_none() {
         let temp_dir = TempDir::new().unwrap();
-        let original_dir = std::env::current_dir().unwrap();
-        std::env::set_current_dir(temp_dir.path()).unwrap();
 
-        let result = resolve_project_root(None);
-        std::env::set_current_dir(&original_dir).unwrap();
-
+        let result = resolve_project_root(None, temp_dir.path());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), temp_dir.path().canonicalize().unwrap());
     }
