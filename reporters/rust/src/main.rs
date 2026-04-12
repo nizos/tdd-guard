@@ -219,6 +219,11 @@ fn process_output(
     Ok(())
 }
 
+fn resolve_project_root(project_root: Option<&str>) -> io::Result<PathBuf> {
+    let path = PathBuf::from(project_root.unwrap_or("."));
+    path.canonicalize()
+}
+
 /// Save test results to TDD Guard format
 fn save_results(project_root: &Path, output: &TddGuardOutput) -> io::Result<()> {
     let output_dir = project_root.join(".claude").join("tdd-guard").join("data");
@@ -285,6 +290,58 @@ fn should_passthrough(explicit: bool, auto_enabled: bool) -> bool {
 mod tests {
     use super::*;
     use tempfile::TempDir;
+
+    #[test]
+    fn test_resolve_accepts_absolute_path() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = resolve_project_root(Some(temp_dir.path().to_str().unwrap()));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), temp_dir.path().canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_resolve_accepts_relative_path() {
+        let temp_dir = TempDir::new().unwrap();
+        let sub_dir = temp_dir.path().join("reltest");
+        fs::create_dir_all(&sub_dir).unwrap();
+        let original_dir = std::env::current_dir().unwrap();
+        std::env::set_current_dir(&sub_dir).unwrap();
+
+        let result = resolve_project_root(Some("."));
+        std::env::set_current_dir(&original_dir).unwrap();
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), sub_dir.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_resolve_accepts_path_containing_dotdot() {
+        let temp_dir = TempDir::new().unwrap();
+        let sub_dir = temp_dir.path().join("dotdot");
+        fs::create_dir_all(&sub_dir).unwrap();
+        let original_dir = std::env::current_dir().unwrap();
+        std::env::set_current_dir(&sub_dir).unwrap();
+
+        let input = sub_dir.join("..").to_str().unwrap().to_string();
+        let result = resolve_project_root(Some(&input));
+        std::env::set_current_dir(&original_dir).unwrap();
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), temp_dir.path().canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_resolve_defaults_to_cwd_when_none() {
+        let temp_dir = TempDir::new().unwrap();
+        let original_dir = std::env::current_dir().unwrap();
+        std::env::set_current_dir(temp_dir.path()).unwrap();
+
+        let result = resolve_project_root(None);
+        std::env::set_current_dir(&original_dir).unwrap();
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), temp_dir.path().canonicalize().unwrap());
+    }
 
     #[test]
     fn test_save_results() {
