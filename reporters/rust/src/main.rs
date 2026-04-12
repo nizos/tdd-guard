@@ -23,9 +23,9 @@ use transformer::{transform_events, TddGuardOutput};
     Supports both cargo test and cargo nextest with optional JSON output for detailed reporting."
 )]
 struct Args {
-    /// Absolute path to project root directory
+    /// Path to project root directory
     #[arg(long, value_name = "PATH")]
-    project_root: String,
+    project_root: Option<String>,
 
     /// Pass through mode - read from stdin instead of running tests
     #[arg(long, default_value_t = false)]
@@ -47,30 +47,22 @@ struct Args {
 fn main() -> io::Result<()> {
     let args = Args::parse();
 
-    let project_root = PathBuf::from(&args.project_root);
-    if !project_root.is_absolute() {
-        eprintln!("Error: project-root must be an absolute path");
-        std::process::exit(1);
-    }
+    let exit_code = run(&args, &std::env::current_dir()?)?;
 
-    if !project_root.exists() {
-        eprintln!(
-            "Error: project-root does not exist: {}",
-            project_root.display()
-        );
-        std::process::exit(1);
-    }
+    std::process::exit(exit_code);
+}
+
+fn run(args: &Args, base_dir: &Path) -> io::Result<i32> {
+    let project_root = resolve_project_root(args.project_root.as_deref(), base_dir)?;
 
     let auto_enabled = !args.no_auto_passthrough && env_auto_enabled();
     let use_pass = should_passthrough(args.passthrough, auto_enabled);
 
-    let exit_code = if use_pass {
-        process_passthrough(&project_root)?
+    if use_pass {
+        process_passthrough(&project_root)
     } else {
-        run_and_process(&args, &project_root)?
-    };
-
-    std::process::exit(exit_code);
+        run_and_process(args, &project_root)
+    }
 }
 
 /// Unified function to run tests and process output
@@ -300,6 +292,47 @@ fn should_passthrough(explicit: bool, auto_enabled: bool) -> bool {
 mod tests {
     use super::*;
     use tempfile::TempDir;
+
+    fn make_args(project_root: Option<&str>) -> Args {
+        Args {
+            project_root: project_root.map(|s| s.to_string()),
+            passthrough: true,
+            no_auto_passthrough: true,
+            runner: "auto".to_string(),
+            test_args: vec![],
+        }
+    }
+
+    fn test_json_path(root: &Path) -> PathBuf {
+        root.join(".claude")
+            .join("tdd-guard")
+            .join("data")
+            .join("test.json")
+    }
+
+    #[test]
+    fn test_run_accepts_relative_project_root() {
+        let temp_dir = TempDir::new().unwrap();
+        let sub_dir = temp_dir.path().join("reltest");
+        fs::create_dir_all(&sub_dir).unwrap();
+
+        let args = make_args(Some("."));
+        let result = run(&args, &sub_dir);
+
+        assert!(result.is_ok(), "Expected success, got: {:?}", result.err());
+        assert!(test_json_path(&sub_dir).exists());
+    }
+
+    #[test]
+    fn test_run_defaults_to_cwd_without_project_root() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let args = make_args(None);
+        let result = run(&args, temp_dir.path());
+
+        assert!(result.is_ok(), "Expected success, got: {:?}", result.err());
+        assert!(test_json_path(temp_dir.path()).exists());
+    }
 
     #[test]
     fn test_resolve_accepts_absolute_path() {
