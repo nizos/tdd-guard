@@ -56,6 +56,7 @@ export class ClaudeAgentSdk implements IModelClient {
   private getCleanEnvironment(): Record<string, string | undefined> {
     const environment = { ...process.env }
     delete environment.CLAUDECODE
+    delete environment.ANTHROPIC_API_KEY
     return environment
   }
 }
