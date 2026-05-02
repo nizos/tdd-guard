@@ -24,6 +24,7 @@ export class GuardManager {
     '*.xml',
     '*.html',
     '*.css',
+    '*.erb',
     '*.rst',
   ]
 

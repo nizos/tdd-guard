@@ -319,6 +319,12 @@ describe('GuardManager', () => {
         expect(await guardManager.shouldIgnoreFile(path)).toBe(shouldIgnore)
       })
     })
+
+    it('ignores ERB templates by default', async () => {
+      expect(
+        await guardManager.shouldIgnoreFile('app/views/users/show.html.erb')
+      ).toBe(true)
+    })
   })
 })
 

@@ -18,6 +18,7 @@ By default, TDD Guard ignores files with these extensions:
 - `*.xml` - XML files
 - `*.html` - HTML files
 - `*.css` - Stylesheets
+- `*.erb` - Rails ERB templates
 - `*.rst` - reStructuredText documentation
 
 ## Custom Ignore Patterns
