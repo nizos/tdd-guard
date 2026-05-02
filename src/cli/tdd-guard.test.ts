@@ -35,6 +35,22 @@ describe('tdd-guard CLI', () => {
 
       expect(stderr).toContain('Failed to parse hook data')
     })
+
+    test('emits no stdout when result has no actionable decision', async () => {
+      // `defaultResult` serializes to `{"reason":""}` (JSON.stringify drops
+      // undefined), which Claude Code's UserPromptSubmit hook reads as a
+      // decision payload and uses to silently consume the user's prompt -
+      // including built-in slash commands like `/clear`.
+      const noopHookInput = JSON.stringify({
+        hook_event_name: 'UserPromptSubmit',
+        prompt: 'hello',
+      })
+
+      const { stdout, exitCode } = await runCli(noopHookInput)
+
+      expect(stdout).toBe('')
+      expect(exitCode).toBe(0)
+    })
   })
 
   describe('Data Persistence', () => {

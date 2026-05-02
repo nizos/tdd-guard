@@ -38,7 +38,13 @@ if (require.main === module) {
   process.stdin.on('end', async () => {
     try {
       const result = await run(inputData)
-      console.log(JSON.stringify(result))
+      if (
+        result.decision !== undefined ||
+        result.reason !== '' ||
+        result.continue === false
+      ) {
+        console.log(JSON.stringify(result))
+      }
     } catch (error) {
       console.error('Failed to parse hook data:', error)
     } finally {
