@@ -10,12 +10,22 @@ import java.util.Objects;
  */
 public final class TestResult {
     private final List<TestModule> testModules;
+    private final String reason;
 
     public TestResult(List<TestModule> testModules) {
+        this(testModules, null);
+    }
+
+    public TestResult(List<TestModule> testModules, String reason) {
         this.testModules = Objects.requireNonNull(testModules, "testModules must not be null");
+        this.reason = reason;
     }
 
     public List<TestModule> testModules() {
         return testModules;
+    }
+
+    public String reason() {
+        return reason;
     }
 }

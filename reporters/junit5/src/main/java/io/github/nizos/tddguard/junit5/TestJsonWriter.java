@@ -45,6 +45,9 @@ public final class TestJsonWriter {
         sb.append("{\n");
         sb.append("  \"testModules\": ");
         appendModules(sb, result.testModules());
+        if (result.reason() != null) {
+            sb.append(",\n  \"reason\": ").append(quote(result.reason()));
+        }
         sb.append("\n}\n");
         return sb.toString();
     }

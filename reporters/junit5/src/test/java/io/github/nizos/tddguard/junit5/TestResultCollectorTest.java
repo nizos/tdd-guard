@@ -117,4 +117,24 @@ class TestResultCollectorTest {
         assertEquals(TestCase.State.FAILED, module.tests().get(1).state());
         assertEquals(TestCase.State.SKIPPED, module.tests().get(2).state());
     }
+
+    @Test
+    void reasonIsPassedWhenAllTestsPass() {
+        collector.recordPassed("com.example.MyTest", "a");
+        collector.recordPassed("com.example.MyTest", "b");
+
+        assertEquals("passed", collector.build().reason());
+    }
+    @Test
+    void reasonIsFailedWhenAnyTestFails() {
+        collector.recordPassed("com.example.MyTest", "a");
+        collector.recordFailed("com.example.MyTest", "b", new RuntimeException("boom"));
+
+        assertEquals("failed", collector.build().reason());
+    }
+
+    @Test
+    void reasonIsPassedWhenNoTestsRecorded() {
+        assertEquals("passed", collector.build().reason());
+    }
 }

@@ -175,4 +175,21 @@ class TestJsonWriterTest {
 
         assertTrue(Files.exists(nested.resolve("test.json")));
     }
+    @Test
+    void serializesReasonWhenPresent() {
+        TestResult result = new TestResult(Collections.emptyList(), "passed");
+
+        String json = writer.serialize(result);
+
+        assertTrue(json.contains("\"reason\": \"passed\""));
+    }
+
+    @Test
+    void omitsReasonWhenNull() {
+        TestResult result = new TestResult(Collections.emptyList());
+
+        String json = writer.serialize(result);
+
+        assertTrue(!json.contains("\"reason\""));
+    }
 }

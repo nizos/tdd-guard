@@ -35,10 +35,18 @@ public final class TestResultCollector {
 
     public TestResult build() {
         List<TestModule> modules = new ArrayList<>();
+        boolean anyFailed = false;
+
         for (Map.Entry<String, List<TestCase>> entry : moduleMap.entrySet()) {
             modules.add(new TestModule(entry.getKey(), entry.getValue()));
+            for (TestCase test : entry.getValue()) {
+                if (test.state() == TestCase.State.FAILED) {
+                    anyFailed = true;
+                }
+            }
         }
-        return new TestResult(modules);
+
+        return new TestResult(modules, anyFailed ? "failed" : "passed");
     }
 
     private void add(String moduleId, TestCase testCase) {
