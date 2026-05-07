@@ -133,6 +133,7 @@ export default [
       'reporters/pytest/**',
       'reporters/phpunit/**',
       'reporters/go/**',
+      'reporters/junit5/build/**',
       '**/*.d.ts',
       '**/*.tsbuildinfo',
     ],

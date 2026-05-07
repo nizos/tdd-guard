@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { cpSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs'
+import { cpSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ReporterConfig, TestScenarios } from '../types'
 import { copyTestArtifacts } from './helpers'
@@ -37,7 +37,7 @@ export function createJunit5Reporter(): ReporterConfig {
       // Resolve symlinks so the ProjectRootResolver cwd check passes on macOS
       const realTempDir = realpathSync(tempDir)
 
-      const result = spawnSync(
+      spawnSync(
         join(tempDir, 'gradlew'),
         [
           'test',
@@ -52,52 +52,6 @@ export function createJunit5Reporter(): ReporterConfig {
           encoding: 'utf8',
         }
       )
-
-      // Compilation errors prevent the JUnit Platform from starting, so the SPI
-      // listener never fires. Synthesize test.json from the compiler output.
-      if (scenario === 'singleImportError' && result.status !== 0) {
-        writeCompilationErrorResult(realTempDir, result.stderr || '')
-      }
     },
   }
-}
-
-function writeCompilationErrorResult(
-  projectRoot: string,
-  stderr: string
-): void {
-  const errorLines = stderr
-    .split('\n')
-    .filter(
-      (line) =>
-        line.includes('error:') ||
-        line.includes('package') ||
-        line.includes('cannot find')
-    )
-    .join('\n')
-    .trim()
-
-  const message = errorLines || 'Compilation failed'
-
-  const outputDir = join(projectRoot, '.claude', 'tdd-guard', 'data')
-  mkdirSync(outputDir, { recursive: true })
-
-  const result = {
-    testModules: [
-      {
-        moduleId: 'SingleImportErrorTest',
-        tests: [
-          {
-            name: 'CompilationError',
-            fullName: 'SingleImportErrorTest::CompilationError',
-            state: 'failed',
-            errors: [{ message }],
-          },
-        ],
-      },
-    ],
-    reason: 'failed',
-  }
-
-  writeFileSync(join(outputDir, 'test.json'), JSON.stringify(result, null, 2))
 }

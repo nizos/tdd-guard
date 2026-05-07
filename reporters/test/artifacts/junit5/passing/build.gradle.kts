@@ -1,8 +1,15 @@
+buildscript {
+    val reporterJar: String by project
+    dependencies { classpath(files(reporterJar)) }
+}
+
 plugins { java }
 
-repositories { mavenCentral() }
+apply(plugin = "io.github.nizos.tdd-guard-junit5")
 
 val reporterJar: String by project
+
+repositories { mavenCentral() }
 
 java {
     toolchain {

@@ -1,6 +1,15 @@
 plugins {
-    `java-library`
+    `java-gradle-plugin`
     `maven-publish`
+}
+
+gradlePlugin {
+    plugins {
+        create("tddGuard") {
+            id = "io.github.nizos.tdd-guard-junit5"
+            implementationClass = "io.github.nizos.tddguard.junit5.TddGuardPlugin"
+        }
+    }
 }
 
 group = "io.github.nizos"
@@ -24,6 +33,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.11.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.junit.platform:junit-platform-launcher")
+    testImplementation(gradleTestKit())
 }
 
 tasks.test {
