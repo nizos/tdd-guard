@@ -475,67 +475,86 @@ RSpec.describe TddGuardMinitest::Reporter do
   end
 
   describe "storage directory determination" do
-    it "uses default relative path when no env var set" do
+    it "raises when no env var is set" do
       Dir.mktmpdir do |tmpdir|
         real_tmpdir = File.realpath(tmpdir)
         Dir.chdir(real_tmpdir) do
           ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => nil) do
-            reporter = described_class.new(StringIO.new)
-            reporter.report
-
-            json_path = File.join(default_data_dir, "test.json")
-            expect(File.exist?(json_path)).to be true
+            expect { described_class.new(StringIO.new) }
+              .to raise_error(ArgumentError, /must be configured via TDD_GUARD_PROJECT_ROOT/)
           end
         end
       end
     end
 
-    it "rejects relative path in env var" do
+    it "raises when env var is empty" do
       Dir.mktmpdir do |tmpdir|
         real_tmpdir = File.realpath(tmpdir)
         Dir.chdir(real_tmpdir) do
-          ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => "../some/path") do
-            reporter = described_class.new(StringIO.new)
-            reporter.report
-
-            json_path = File.join(default_data_dir, "test.json")
-            expect(File.exist?(json_path)).to be true
-            expect(File.exist?(File.join("../some/path", default_data_dir, "test.json"))).to be false
+          ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => "") do
+            expect { described_class.new(StringIO.new) }
+              .to raise_error(ArgumentError, /must be configured via TDD_GUARD_PROJECT_ROOT/)
           end
         end
       end
     end
 
-    it "rejects project root when cwd is outside" do
+    it "accepts a relative path" do
+      Dir.mktmpdir do |tmpdir|
+        real_tmpdir = File.realpath(tmpdir)
+        Dir.chdir(real_tmpdir) do
+          ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => ".") do
+            reporter = described_class.new(StringIO.new)
+            reporter.report
+
+            json_path = File.join(real_tmpdir, default_data_dir, "test.json")
+            expect(File.exist?(json_path)).to be true
+          end
+        end
+      end
+    end
+
+    it "accepts a path containing .." do
+      Dir.mktmpdir do |tmpdir|
+        real_tmpdir = File.realpath(tmpdir)
+        sub_dir = File.join(real_tmpdir, "sub")
+        FileUtils.mkdir_p(sub_dir)
+        Dir.chdir(sub_dir) do
+          ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => "../") do
+            reporter = described_class.new(StringIO.new)
+            reporter.report
+
+            json_path = File.join(real_tmpdir, default_data_dir, "test.json")
+            expect(File.exist?(json_path)).to be true
+          end
+        end
+      end
+    end
+
+    it "raises when cwd is outside the project root" do
       Dir.mktmpdir do |tmpdir|
         real_tmpdir = File.realpath(tmpdir)
         Dir.chdir(real_tmpdir) do
           ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => "/other/project") do
-            reporter = described_class.new(StringIO.new)
-            reporter.report
-
-            json_path = File.join(default_data_dir, "test.json")
-            expect(File.exist?(json_path)).to be true
+            expect { described_class.new(StringIO.new) }
+              .to raise_error(ArgumentError, /current directory must be within project root/)
           end
         end
       end
     end
 
-    it "rejects project root that is a prefix of cwd but not an ancestor" do
+    it "raises when project root is a prefix of cwd but not an ancestor" do
       Dir.mktmpdir do |tmpdir|
         real_tmpdir = File.realpath(tmpdir)
         project_dir = File.join(real_tmpdir, "foo")
         similar_dir = File.join(real_tmpdir, "foobar")
+        FileUtils.mkdir_p(project_dir)
         FileUtils.mkdir_p(similar_dir)
 
         Dir.chdir(similar_dir) do
           ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => project_dir) do
-            reporter = described_class.new(StringIO.new)
-            reporter.report
-
-            json_path = File.join(default_data_dir, "test.json")
-            expect(File.exist?(json_path)).to be true
-            expect(File.exist?(File.join(project_dir, default_data_dir, "test.json"))).to be false
+            expect { described_class.new(StringIO.new) }
+              .to raise_error(ArgumentError, /current directory must be within project root/)
           end
         end
       end

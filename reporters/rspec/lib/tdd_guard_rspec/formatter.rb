@@ -178,21 +178,31 @@ module TddGuardRspec
 
     def determine_storage_dir
       project_root = ENV["TDD_GUARD_PROJECT_ROOT"]
-      return DEFAULT_DATA_DIR unless project_root && !project_root.empty?
-      return DEFAULT_DATA_DIR unless absolute_path?(project_root)
-      return DEFAULT_DATA_DIR unless cwd_within?(project_root)
+      if project_root.nil? || project_root.empty?
+        raise ArgumentError,
+              "project root must be configured via TDD_GUARD_PROJECT_ROOT environment variable"
+      end
 
-      File.join(project_root, DEFAULT_DATA_DIR)
-    end
+      resolved = canonical_path(File.expand_path(project_root))
+      unless cwd_within?(resolved)
+        raise ArgumentError,
+              "current directory must be within project root #{resolved.inspect}"
+      end
 
-    def absolute_path?(path)
-      File.absolute_path?(path)
+      File.join(resolved, DEFAULT_DATA_DIR)
     end
 
     def cwd_within?(root)
-      expanded = File.expand_path(root)
-      cwd = Dir.pwd
-      cwd == expanded || cwd.start_with?("#{expanded}/")
+      cwd = canonical_path(Dir.pwd)
+      cwd == root || cwd.start_with?("#{root}/")
+    end
+
+    # Resolve symlinks when the path exists so that platforms with
+    # symlinked tempdirs (macOS /var -> /private/var) compare consistently.
+    def canonical_path(path)
+      File.realpath(path)
+    rescue Errno::ENOENT
+      path
     end
   end
 end

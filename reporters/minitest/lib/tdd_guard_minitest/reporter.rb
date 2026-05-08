@@ -38,6 +38,10 @@ module TddGuardMinitest
     # to avoid clobbering real results.
     def self.handle_load_error(exception)
       new(StringIO.new).handle_load_error(exception)
+    rescue ArgumentError
+      # Project root is not configured; the user has already seen the
+      # configuration error from the main test run. Avoid double-raising
+      # from the autorun at_exit hook.
     end
 
     # Reads the existing test.json, merges in the unhandledErrors field,
@@ -45,6 +49,8 @@ module TddGuardMinitest
     # autorun.rb after Minitest.after_run blocks have completed.
     def self.append_unhandled_errors(errors)
       new(StringIO.new).append_unhandled_errors(errors)
+    rescue ArgumentError
+      # Same as above: skip when the project root is not configured.
     end
 
     def append_unhandled_errors(errors)
@@ -173,21 +179,31 @@ module TddGuardMinitest
 
     def determine_storage_dir
       project_root = ENV["TDD_GUARD_PROJECT_ROOT"]
-      return DEFAULT_DATA_DIR unless project_root && !project_root.empty?
-      return DEFAULT_DATA_DIR unless absolute_path?(project_root)
-      return DEFAULT_DATA_DIR unless cwd_within?(project_root)
+      if project_root.nil? || project_root.empty?
+        raise ArgumentError,
+              "project root must be configured via TDD_GUARD_PROJECT_ROOT environment variable"
+      end
 
-      File.join(project_root, DEFAULT_DATA_DIR)
-    end
+      resolved = canonical_path(File.expand_path(project_root))
+      unless cwd_within?(resolved)
+        raise ArgumentError,
+              "current directory must be within project root #{resolved.inspect}"
+      end
 
-    def absolute_path?(path)
-      File.absolute_path?(path)
+      File.join(resolved, DEFAULT_DATA_DIR)
     end
 
     def cwd_within?(root)
-      expanded = File.expand_path(root)
-      cwd = Dir.pwd
-      cwd == expanded || cwd.start_with?("#{expanded}/")
+      cwd = canonical_path(Dir.pwd)
+      cwd == root || cwd.start_with?("#{root}/")
+    end
+
+    # Resolve symlinks when the path exists so that platforms with
+    # symlinked tempdirs (macOS /var -> /private/var) compare consistently.
+    def canonical_path(path)
+      File.realpath(path)
+    rescue Errno::ENOENT
+      path
     end
 
     # Injects a synthetic failed test entry derived from an exception raised

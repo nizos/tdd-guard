@@ -50,9 +50,9 @@ export TDD_GUARD_PROJECT_ROOT="/absolute/path/to/project/root"
 
 ### Configuration Rules
 
-- Path must be absolute
-- Current directory must be within the configured project root
-- Falls back to current directory if configuration is invalid
+- Set `TDD_GUARD_PROJECT_ROOT` to the project root. Absolute and relative paths are both accepted; relative paths resolve against the working directory at runtime.
+- Tests must be run from a directory at or below the project root.
+- The reporter raises at startup when the variable is not set. It no longer silently falls back to the current directory.
 
 ## Development
 
