@@ -416,6 +416,87 @@ RSpec.describe TddGuardMinitest::Reporter do
     end
   end
 
+  describe "non-utf-8 message handling" do
+    it "scrubs binary (ASCII-8BIT) bytes from a failure message" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          failure = build_assertion_failure(message: "binary: \xff\xfe".b)
+          reporter.record(
+            build_result(name: "test_with_binary", klass: "BinaryTest",
+                         source_location: ["./test/binary_test.rb", 5],
+                         failures: [failure])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          expect(tests.length).to eq(1)
+          expect(tests[0]["state"]).to eq("failed")
+          expect(tests[0]["errors"][0]["message"]).to start_with("binary: ")
+        end
+      end
+    end
+
+    it "preserves valid UTF-8 (including Japanese) unchanged" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          failure = build_assertion_failure(message: "失敗しました")
+          reporter.record(
+            build_result(name: "test_japanese", klass: "JaTest",
+                         source_location: ["./test/ja_test.rb", 5],
+                         failures: [failure])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          expect(tests[0]["errors"][0]["message"]).to eq("失敗しました")
+        end
+      end
+    end
+
+    it "transcodes Shift_JIS messages to UTF-8" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          failure = build_assertion_failure(message: "失敗".encode("Shift_JIS"))
+          reporter.record(
+            build_result(name: "test_sjis", klass: "SjisTest",
+                         source_location: ["./test/sjis_test.rb", 5],
+                         failures: [failure])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          expect(tests[0]["errors"][0]["message"]).to eq("失敗")
+        end
+      end
+    end
+
+    it "preserves other tests in the same run when one has a non-utf-8 message" do
+      Dir.mktmpdir do |tmpdir|
+        create_reporter_in(tmpdir) do |reporter, storage_dir|
+          reporter.record(
+            build_result(name: "test_pass_one", klass: "MixTest",
+                         source_location: ["./test/mix_test.rb", 1])
+          )
+          reporter.record(
+            build_result(name: "test_binary_fail", klass: "MixTest",
+                         source_location: ["./test/mix_test.rb", 5],
+                         failures: [build_assertion_failure(message: "\xff\xfe".b)])
+          )
+          reporter.record(
+            build_result(name: "test_pass_two", klass: "MixTest",
+                         source_location: ["./test/mix_test.rb", 9])
+          )
+
+          data = run_and_read_json(reporter, storage_dir)
+          tests = all_tests(data)
+          expect(tests.length).to eq(3)
+          states = tests.map { |t| t["state"] }
+          expect(states).to contain_exactly("passed", "passed", "failed")
+        end
+      end
+    end
+  end
+
   describe "name extraction" do
     it "uses result.name as name" do
       Dir.mktmpdir do |tmpdir|

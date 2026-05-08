@@ -130,7 +130,7 @@ module TddGuardMinitest
 
     def build_unhandled_error(exception)
       name = exception.class.name || "(anonymous error class)"
-      error = { "name" => name, "message" => exception.message }
+      error = { "name" => name, "message" => scrub_utf8(exception.message) }
       stack = extract_relevant_stack(exception.backtrace)
       error["stack"] = stack if stack
       error
@@ -139,14 +139,29 @@ module TddGuardMinitest
     def build_error(failure)
       if failure.is_a?(Minitest::UnexpectedError)
         exception = failure.error
-        error = { "message" => exception.message }
+        error = { "message" => scrub_utf8(exception.message) }
         stack = extract_relevant_stack(exception.backtrace)
       else
-        error = { "message" => failure.message }
+        error = { "message" => scrub_utf8(failure.message) }
         stack = extract_relevant_stack(failure.backtrace)
       end
       error["stack"] = stack if stack
       error
+    end
+
+    # Replace bytes that cannot be represented as UTF-8 so that
+    # JSON.pretty_generate does not raise on binary or alternately
+    # encoded strings (e.g. Shift_JIS, ASCII-8BIT). Valid UTF-8
+    # strings, including Japanese, pass through unchanged.
+    def scrub_utf8(str)
+      return str unless str.is_a?(String)
+      return str if str.encoding == Encoding::UTF_8 && str.valid_encoding?
+
+      if str.encoding == Encoding::UTF_8
+        str.scrub
+      else
+        str.encode("UTF-8", invalid: :replace, undef: :replace)
+      end
     end
 
     def extract_relevant_stack(backtrace)
@@ -195,8 +210,9 @@ module TddGuardMinitest
     def add_load_error(exception)
       frame = first_user_frame(exception.backtrace)
       file_path = frame ? frame.split(":", 2).first.to_s.sub(%r{^\./}, "") : "unknown"
-      name = "#{exception.class}: #{exception.message.lines.first.to_s.strip}"
-      message = build_load_error_message(exception, frame)
+      msg = scrub_utf8(exception.message)
+      name = "#{exception.class}: #{msg.lines.first.to_s.strip}"
+      message = build_load_error_message(exception, frame, msg)
 
       @test_results << {
         "name" => name,
@@ -214,8 +230,9 @@ module TddGuardMinitest
       end
     end
 
-    def build_load_error_message(exception, frame)
-      header = "#{exception.class}: #{exception.message}"
+    def build_load_error_message(exception, frame, message = nil)
+      msg = message || scrub_utf8(exception.message)
+      header = "#{exception.class}: #{msg}"
       return header unless frame
 
       "#{header}\n    #{frame.sub(%r{^\./}, '')}"
