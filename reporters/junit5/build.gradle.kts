@@ -23,6 +23,10 @@ java {
     withJavadocJar()
 }
 
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(17)
+}
+
 repositories {
     mavenCentral()
 }

@@ -13,15 +13,19 @@ import java.util.Set;
 
 public class TddGuardPlugin implements Plugin<Project> {
 
+    static final Set<String> COMPILATION_TASKS = Set.of("compileJava", "compileTestJava");
+
     @Override
     public void apply(Project project) {
-        String projectRoot = System.getenv(ProjectRootResolver.ENV_VAR);
+        String projectRoot = project.getProviders()
+                .environmentVariable(ProjectRootResolver.ENV_VAR)
+                .getOrNull();
         if (projectRoot == null) {
             return;
         }
 
         project.getTasks().withType(JavaCompile.class, task -> {
-            if (!"compileTestJava".equals(task.getName())) {
+            if (!COMPILATION_TASKS.contains(task.getName())) {
                 return;
             }
 
