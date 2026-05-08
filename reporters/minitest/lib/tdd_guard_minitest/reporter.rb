@@ -6,9 +6,11 @@ require "minitest"
 
 module TddGuardMinitest
   @unhandled_errors = []
+  @reported = false
 
   class << self
     attr_reader :unhandled_errors
+    attr_accessor :reported
   end
 
   # Minitest reporter that captures test results for TDD Guard validation.
@@ -34,8 +36,11 @@ module TddGuardMinitest
     # point's at_exit hook when $! is set.
     #
     # Injects a synthetic entry into @test_results and writes the JSON
-    # through the normal report path. Skips if test.json already exists
-    # to avoid clobbering real results.
+    # through the normal report path. Skips when this process has already
+    # written test.json via the normal Minitest flow, so it never clobbers
+    # real results from the same run. A stale test.json left behind by a
+    # previous process is overwritten so the file always reflects the most
+    # recent run's state.
     def self.handle_load_error(exception)
       new(StringIO.new).handle_load_error(exception)
     end
@@ -57,7 +62,7 @@ module TddGuardMinitest
     end
 
     def handle_load_error(exception)
-      return if File.exist?(File.join(@storage_dir, "test.json"))
+      return if TddGuardMinitest.reported
 
       add_load_error(exception)
       report
@@ -109,6 +114,7 @@ module TddGuardMinitest
 
       FileUtils.mkdir_p(@storage_dir)
       File.write(File.join(@storage_dir, "test.json"), JSON.pretty_generate(result))
+      TddGuardMinitest.reported = true
     end
 
     def passed?

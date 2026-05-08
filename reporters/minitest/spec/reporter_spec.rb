@@ -775,6 +775,9 @@ RSpec.describe TddGuardMinitest::Reporter do
   end
 
   describe ".handle_load_error" do
+    before { TddGuardMinitest.reported = false }
+    after  { TddGuardMinitest.reported = false }
+
     # Helper: run handle_load_error in an isolated tmpdir and return parsed JSON
     def run_handle_load_error_in(tmpdir, exception)
       real_tmpdir = File.realpath(tmpdir)
@@ -902,14 +905,14 @@ RSpec.describe TddGuardMinitest::Reporter do
       end
     end
 
-    it "does not overwrite an existing test.json" do
+    it "overwrites a stale test.json left behind by a previous process" do
       Dir.mktmpdir do |tmpdir|
         real_tmpdir = File.realpath(tmpdir)
         Dir.chdir(real_tmpdir) do
           ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => real_tmpdir) do
             json_path = File.join(real_tmpdir, default_data_dir, "test.json")
             FileUtils.mkdir_p(File.dirname(json_path))
-            File.write(json_path, '{"existing":"results"}')
+            File.write(json_path, '{"testModules":[],"reason":"passed"}')
 
             exc = build_load_error(
               message: "cannot load such file -- my_class",
@@ -917,7 +920,37 @@ RSpec.describe TddGuardMinitest::Reporter do
             )
             described_class.handle_load_error(exc)
 
-            expect(File.read(json_path)).to eq('{"existing":"results"}')
+            data = JSON.parse(File.read(json_path))
+            expect(data["reason"]).to eq("failed")
+            expect(data["testModules"][0]["moduleId"]).to eq("test/my_class_test.rb")
+          end
+        end
+      end
+    end
+
+    it "does not overwrite test.json after report has run in this process" do
+      Dir.mktmpdir do |tmpdir|
+        real_tmpdir = File.realpath(tmpdir)
+        Dir.chdir(real_tmpdir) do
+          ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => real_tmpdir) do
+            reporter = described_class.new(StringIO.new)
+            reporter.record(
+              build_result(name: "test_passes", klass: "MyTest",
+                           source_location: ["./test/my_test.rb", 5])
+            )
+            reporter.report  # sets the in-process flag
+
+            exc = build_load_error(
+              message: "cannot load such file -- my_class",
+              backtrace: ["./test/my_class_test.rb:3:in `require'"]
+            )
+            described_class.handle_load_error(exc)
+
+            json_path = File.join(real_tmpdir, default_data_dir, "test.json")
+            data = JSON.parse(File.read(json_path))
+            tests = data["testModules"].flat_map { |m| m["tests"] }
+            expect(tests.length).to eq(1)
+            expect(tests[0]["name"]).to eq("test_passes")
           end
         end
       end
