@@ -288,6 +288,48 @@ RSpec.describe TddGuardMinitest::Reporter do
         end
       end
     end
+
+    describe "compute_expected_count" do
+      it "returns zero when filter is a Proc (so a Rails proc-style filter is not flagged as interrupted)" do
+        Dir.mktmpdir do |tmpdir|
+          create_reporter_in(tmpdir) do |reporter, _|
+            reporter.options[:filter] = ->(_method_name) { true }
+            expect(reporter.send(:compute_expected_count)).to eq(0)
+          end
+        end
+      end
+
+      it "returns zero when test_files contain a line-number entry (Rails `path:N`)" do
+        Dir.mktmpdir do |tmpdir|
+          create_reporter_in(tmpdir) do |reporter, _|
+            reporter.options[:test_files] = ["test/foo_test.rb:8"]
+            expect(reporter.send(:compute_expected_count)).to eq(0)
+          end
+        end
+      end
+
+      it "does not short-circuit when test_files have no line numbers" do
+        Dir.mktmpdir do |tmpdir|
+          create_reporter_in(tmpdir) do |reporter, _|
+            reporter.options[:test_files] = ["test/foo_test.rb"]
+            expect(reporter.send(:line_targeted?, reporter.options[:test_files]))
+              .to be false
+          end
+        end
+      end
+
+      it "detects line-number entries with line_targeted?" do
+        Dir.mktmpdir do |tmpdir|
+          create_reporter_in(tmpdir) do |reporter, _|
+            expect(reporter.send(:line_targeted?, ["test/foo_test.rb:8"])).to be true
+            expect(reporter.send(:line_targeted?, ["test/foo_test.rb:8", "test/bar_test.rb"])).to be true
+            expect(reporter.send(:line_targeted?, ["test/foo_test.rb"])).to be false
+            expect(reporter.send(:line_targeted?, [])).to be false
+            expect(reporter.send(:line_targeted?, nil)).to be false
+          end
+        end
+      end
+    end
   end
 
   describe "stack field" do

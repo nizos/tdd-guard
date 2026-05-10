@@ -119,6 +119,17 @@ module TddGuardMinitest
 
     def compute_expected_count
       filter = options[:filter]
+      # Skip the count when the filter cannot be reliably matched against
+      # method names. Two cases motivate this:
+      # - filter is something other than String/Regexp (e.g. a Proc), which
+      #   Minitest's grep-based methods_matching cannot count.
+      # - Rails passes line-targeted runs (`rails test path:N`) via
+      #   options[:test_files] as "path:N" entries while leaving filter nil,
+      #   so runnable_methods returns the file's full set and an inflated
+      #   expected_count would falsely flip the run's reason to "interrupted".
+      return 0 if filter && !filter.is_a?(String) && !filter.is_a?(Regexp)
+      return 0 if line_targeted?(options[:test_files])
+
       Minitest::Runnable.runnables.sum do |klass|
         if filter
           klass.methods_matching(filter).size
@@ -126,6 +137,11 @@ module TddGuardMinitest
           klass.runnable_methods.size
         end
       end
+    end
+
+    def line_targeted?(test_files)
+      return false unless test_files.is_a?(Array)
+      test_files.any? { |entry| entry.is_a?(String) && entry =~ /:\d+\z/ }
     end
 
     def build_unhandled_error(exception)
