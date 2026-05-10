@@ -109,7 +109,9 @@ RSpec.describe TddGuardRspec::Formatter do
         create_formatter_in(tmpdir) do |formatter, storage_dir|
           data = run_and_read_json(formatter, storage_dir)
           expect(data["testModules"]).to eq([])
-          expect(data["reason"]).to eq("passed")
+          # No examples actually ran, so the reporter no longer claims
+          # "passed" — see #177.
+          expect(data["reason"]).to eq("interrupted")
         end
       end
     end
@@ -238,13 +240,34 @@ RSpec.describe TddGuardRspec::Formatter do
       end
     end
 
-    it "reports passed when expected count is zero" do
+    it "reports interrupted when expected count is zero and nothing ran" do
+      # An empty `RSpec.describe` (or a `--tag` filter that matches no
+      # examples) collects zero examples. Before #177, this returned
+      # "passed", which silently lied to TDD Guard about a suite that
+      # never executed an assertion.
       Dir.mktmpdir do |tmpdir|
         create_formatter_in(tmpdir) do |formatter, storage_dir|
           formatter.start(build_start_notification(count: 0))
 
           data = run_and_read_json(formatter, storage_dir)
-          expect(data["reason"]).to eq("passed")
+          expect(data["reason"]).to eq("interrupted")
+        end
+      end
+    end
+
+    it "reports failed when an unhandled error is captured (no examples ran)" do
+      # Simulates a SyntaxError in a spec file: RSpec aborts during file
+      # loading, the start callback never fires, but the :message callback
+      # records the error via @unhandled_errors. Reason must reflect the
+      # failure even though @expected_count stays zero (see #177).
+      Dir.mktmpdir do |tmpdir|
+        create_formatter_in(tmpdir) do |formatter, storage_dir|
+          formatter.instance_variable_set(:@unhandled_errors, [
+            { "name" => "SyntaxError", "message" => "Unmatched (" }
+          ])
+
+          data = run_and_read_json(formatter, storage_dir)
+          expect(data["reason"]).to eq("failed")
         end
       end
     end

@@ -78,9 +78,17 @@ module TddGuardRspec
       end
 
       has_failures = @test_results.any? { |t| t["state"] == "failed" }
-      reason = if has_failures
+      has_errors = !@unhandled_errors.empty? || @errors_outside > 0
+      reason = if has_failures || has_errors
                  "failed"
                elsif @expected_count > 0 && @test_results.length < @expected_count
+                 "interrupted"
+               elsif @test_results.empty?
+                 # No examples actually ran (e.g. spec file aborted before
+                 # the start callback fired due to a SyntaxError, or an
+                 # empty `RSpec.describe` collected zero examples). Treat
+                 # this as "interrupted" rather than claiming "passed",
+                 # since nothing exercised the suite.
                  "interrupted"
                else
                  "passed"
