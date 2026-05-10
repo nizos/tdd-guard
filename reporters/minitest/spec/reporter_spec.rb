@@ -869,6 +869,36 @@ RSpec.describe TddGuardMinitest::Reporter do
       end
     end
 
+    it "strips the cwd prefix from absolute backtrace paths so moduleId is relative" do
+      Dir.mktmpdir do |tmpdir|
+        real_tmpdir = File.realpath(tmpdir)
+        absolute_frame = "#{real_tmpdir}/test/my_class_test.rb:3:in `require'"
+        exc = build_load_error(
+          message: "cannot load such file -- my_class",
+          backtrace: [absolute_frame]
+        )
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        expect(data["testModules"][0]["moduleId"]).to eq("test/my_class_test.rb")
+      end
+    end
+
+    it "strips the cwd prefix from absolute backtrace frames embedded in the error message" do
+      Dir.mktmpdir do |tmpdir|
+        real_tmpdir = File.realpath(tmpdir)
+        absolute_frame = "#{real_tmpdir}/test/my_class_test.rb:3:in `<top (required)>'"
+        exc = build_load_error(
+          message: "cannot load such file -- my_class",
+          backtrace: [absolute_frame]
+        )
+        data = run_handle_load_error_in(tmpdir, exc)
+
+        message = data["testModules"][0]["tests"][0]["errors"][0]["message"]
+        expect(message).to include("test/my_class_test.rb:3:in `<top (required)>'")
+        expect(message).not_to include(real_tmpdir)
+      end
+    end
+
     it "uses exception class and message as the test name" do
       Dir.mktmpdir do |tmpdir|
         exc = build_load_error(

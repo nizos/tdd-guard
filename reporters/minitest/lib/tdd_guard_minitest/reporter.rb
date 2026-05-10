@@ -201,8 +201,17 @@ module TddGuardMinitest
       source = result.source_location
       return "unknown" unless source
 
-      path = source.first
-      # Convert absolute path to relative path from cwd
+      relative_path(source.first)
+    end
+
+    # Strip a leading cwd prefix and any "./" so file paths in test.json
+    # are reported relative to the project root regardless of whether they
+    # arrived as absolute paths (from a backtrace) or already-relative
+    # paths (from result.source_location).
+    def relative_path(path)
+      return "unknown" if path.nil? || path.to_s.empty?
+
+      path = path.to_s
       cwd = "#{Dir.pwd}/"
       path = path.delete_prefix(cwd) if path.start_with?(cwd)
       path.sub(%r{^\./}, "")
@@ -231,7 +240,7 @@ module TddGuardMinitest
     # before Minitest could run.
     def add_load_error(exception)
       frame = first_user_frame(exception.backtrace)
-      file_path = frame ? frame.split(":", 2).first.to_s.sub(%r{^\./}, "") : "unknown"
+      file_path = frame ? relative_path(frame.split(":", 2).first) : "unknown"
       msg = scrub_utf8(exception.message)
       name = "#{exception.class}: #{msg.lines.first.to_s.strip}"
       message = build_load_error_message(exception, frame, msg)
@@ -257,7 +266,7 @@ module TddGuardMinitest
       header = "#{exception.class}: #{msg}"
       return header unless frame
 
-      "#{header}\n    #{frame.sub(%r{^\./}, '')}"
+      "#{header}\n    #{relative_path(frame)}"
     end
   end
 end
