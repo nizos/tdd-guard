@@ -183,7 +183,13 @@ module TddGuardRspec
               "project root must be configured via TDD_GUARD_PROJECT_ROOT environment variable"
       end
 
-      resolved = canonical_path(File.expand_path(project_root))
+      expanded = File.expand_path(project_root)
+      unless File.directory?(expanded)
+        raise ArgumentError,
+              "project root does not exist: #{expanded.inspect}"
+      end
+
+      resolved = canonical_path(expanded)
       unless cwd_within?(resolved)
         raise ArgumentError,
               "current directory must be within project root #{resolved.inspect}"

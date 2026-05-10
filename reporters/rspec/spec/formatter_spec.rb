@@ -476,10 +476,52 @@ RSpec.describe TddGuardRspec::Formatter do
     it "raises when cwd is outside the project root" do
       Dir.mktmpdir do |tmpdir|
         real_tmpdir = File.realpath(tmpdir)
+        Dir.mktmpdir do |outside_dir|
+          real_outside = File.realpath(outside_dir)
+          Dir.chdir(real_tmpdir) do
+            ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => real_outside) do
+              expect { described_class.new(StringIO.new) }
+                .to raise_error(ArgumentError, /current directory must be within project root/)
+            end
+          end
+        end
+      end
+    end
+
+    it "raises with a path-identifying error when project root does not exist" do
+      Dir.mktmpdir do |tmpdir|
+        real_tmpdir = File.realpath(tmpdir)
         Dir.chdir(real_tmpdir) do
-          ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => "/other/project") do
+          missing = File.join(real_tmpdir, "does", "not", "exist")
+          ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => missing) do
             expect { described_class.new(StringIO.new) }
-              .to raise_error(ArgumentError, /current directory must be within project root/)
+              .to raise_error(ArgumentError) do |err|
+                expect(err.message).to include("project root does not exist")
+                expect(err.message).to include(missing)
+              end
+          end
+        end
+      end
+    end
+
+    it "resolves storage dir correctly when project root and cwd differ via symlink" do
+      Dir.mktmpdir do |tmpdir|
+        real_outer = File.realpath(tmpdir)
+        real_root = File.join(real_outer, "real_root")
+        FileUtils.mkdir_p(real_root)
+        symlink_root = File.join(real_outer, "sym_root")
+        File.symlink(real_root, symlink_root)
+
+        # cwd reaches the project via the symlink while the env var points
+        # at the canonical real path. canonical_path on both sides should
+        # converge to real_root so cwd_within? still recognises the match.
+        Dir.chdir(symlink_root) do
+          ClimateControl.modify("TDD_GUARD_PROJECT_ROOT" => real_root) do
+            formatter = described_class.new(StringIO.new)
+            formatter.close(double("notification"))
+
+            json_path = File.join(real_root, default_data_dir, "test.json")
+            expect(File.exist?(json_path)).to be true
           end
         end
       end
