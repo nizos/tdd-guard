@@ -104,6 +104,21 @@ class CompilationErrorHandlerTest {
         assertTrue(content.contains("\"state\""));
     }
 
+    @Test
+    void mergesWithExistingResultWhenCalledTwice() throws IOException {
+        File fileA = createSourceFile("ATest.java", "class ATest {}");
+        File fileB = createSourceFile("BTest.java", "class BTest {}");
+        Path outputDir = tempDir.resolve("output");
+        String captured = "error: compilation failed";
+
+        CompilationErrorHandler.handle(outputDir, captured, Set.of(fileA));
+        CompilationErrorHandler.handle(outputDir, captured, Set.of(fileB));
+
+        String content = Files.readString(outputDir.resolve("test.json"));
+        assertTrue(content.contains("ATest"), "first module must be present");
+        assertTrue(content.contains("BTest"), "second module must be present");
+    }
+
     // helpers
 
     private File createSourceFile(String name, String content) throws IOException {

@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -42,14 +43,37 @@ final class CompilationErrorHandler {
                 moduleId + "::CompilationError",
                 List.of(error)
         );
-        TestModule module = new TestModule(moduleId, List.of(testCase));
-        TestResult result = new TestResult(List.of(module), "failed");
+        TestModule newModule = new TestModule(moduleId, List.of(testCase));
+        TestResult result = mergeWithExisting(outputDir, newModule);
 
         try {
             new TestJsonWriter().write(outputDir, result);
         } catch (IOException e) {
             System.err.println("[tdd-guard-junit5] failed to write compilation error result: " + e.getMessage());
         }
+    }
+
+    /**
+     * Reads the existing {@code test.json} from {@code outputDir} (if present) and
+     * appends {@code newModule} to it. Prevents overwriting results from a previous
+     * compilation task in multi-subproject Gradle builds.
+     *
+     * <p>Falls through to a single-module result when the file is absent or unparseable.
+     */
+    private static TestResult mergeWithExisting(Path outputDir, TestModule newModule) {
+        Path testJson = outputDir.resolve("test.json");
+        if (Files.exists(testJson)) {
+            try {
+                String existing = Files.readString(testJson);
+                TestResult prior = new TestJsonReader().parse(existing);
+                List<TestModule> merged = new ArrayList<>(prior.testModules());
+                merged.add(newModule);
+                return new TestResult(merged, "failed");
+            } catch (IOException | RuntimeException ignored) {
+                // Unparseable or unreadable — fall through to single-module result
+            }
+        }
+        return new TestResult(List.of(newModule), "failed");
     }
 
     /**
