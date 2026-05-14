@@ -40,8 +40,8 @@ class CompilationErrorHandlerTest {
 
         String moduleId = CompilationErrorHandler.extractModuleId(sources);
 
-        // Should be one of the class names
-        assertTrue(moduleId.equals("ATest") || moduleId.equals("BTest"));
+        // extractModuleId sorts alphabetically and takes the first
+        assertEquals("ATest", moduleId);
     }
 
     @Test
