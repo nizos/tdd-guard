@@ -633,7 +633,11 @@ describe('Reporters', () => {
         },
         {
           name: 'junit5',
-          expected: ['com.nonexistent.module', 'SingleImportErrorTest'],
+          expected: [
+            'com.nonexistent.module',
+            'SingleImportErrorTest',
+            'does not exist',
+          ],
         },
       ]
 
