@@ -41,7 +41,7 @@ public class TddGuardPlugin implements Plugin<Project> {
 
                 task.getLogging().removeStandardErrorListener(listener);
 
-                Path outputDir = Path.of(projectRoot).resolve(".claude/tdd-guard/data");
+                Path outputDir = Path.of(projectRoot).resolve(TddGuardListener.DATA_SUBPATH);
                 String capturedOutput = String.join("\n", capturedLines);
                 Set<File> sourceFiles = ((JavaCompile) task).getSource().getFiles();
                 CompilationErrorHandler.handle(outputDir, capturedOutput, sourceFiles);

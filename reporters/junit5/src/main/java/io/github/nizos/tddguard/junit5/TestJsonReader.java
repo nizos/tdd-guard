@@ -19,8 +19,6 @@ import java.util.regex.Pattern;
  */
 final class TestJsonReader {
 
-    // Matches "fieldName": "value" where value is a JSON-escaped string.
-    private static final String STRING_VALUE_REGEX = "\"([^\"\\\\]|\\\\.)*\"";
 
     TestResult parse(String json) {
         String reason = extractStringField(json, "reason");
@@ -94,7 +92,7 @@ final class TestJsonReader {
      */
     private int findArrayStart(String json, String fieldName) {
         // Search for "fieldName": [
-        Pattern p = Pattern.compile("\"" + fieldName + "\"\\s*:\\s*\\[");
+        Pattern p = Pattern.compile("\"" + Pattern.quote(fieldName) + "\"\\s*:\\s*\\[");
         Matcher m = p.matcher(json);
         if (!m.find()) return -1;
         return m.end() - 1; // index of '['

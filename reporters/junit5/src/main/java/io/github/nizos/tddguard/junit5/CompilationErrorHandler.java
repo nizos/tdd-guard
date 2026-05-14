@@ -8,6 +8,7 @@ import io.github.nizos.tddguard.junit5.model.TestResult;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,16 +63,16 @@ final class CompilationErrorHandler {
      */
     private static TestResult mergeWithExisting(Path outputDir, TestModule newModule) {
         Path testJson = outputDir.resolve("test.json");
-        if (Files.exists(testJson)) {
-            try {
-                String existing = Files.readString(testJson);
-                TestResult prior = new TestJsonReader().parse(existing);
-                List<TestModule> merged = new ArrayList<>(prior.testModules());
-                merged.add(newModule);
-                return new TestResult(merged, "failed");
-            } catch (IOException | RuntimeException ignored) {
-                // Unparseable or unreadable — fall through to single-module result
-            }
+        try {
+            String existing = Files.readString(testJson);
+            TestResult prior = new TestJsonReader().parse(existing);
+            List<TestModule> merged = new ArrayList<>(prior.testModules());
+            merged.add(newModule);
+            return new TestResult(merged, "failed");
+        } catch (NoSuchFileException ignored) {
+            // No prior result — first compilation failure in this build
+        } catch (IOException | RuntimeException e) {
+            System.err.println("[tdd-guard-junit5] could not merge existing test.json: " + e.getMessage());
         }
         return new TestResult(List.of(newModule), "failed");
     }

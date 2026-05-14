@@ -23,7 +23,7 @@ import java.util.function.Function;
  * </ul>
  */
 public final class TddGuardListener implements TestExecutionListener {
-    private static final String DATA_SUBPATH = ".claude/tdd-guard/data";
+    static final String DATA_SUBPATH = ".claude/tdd-guard/data";
 
     private final ProjectRootResolver resolver;
     private final TestJsonWriter writer;
