@@ -53,8 +53,20 @@ final class CompilationErrorHandler {
     }
 
     /**
-     * Derives the moduleId from the first source file's name (without extension),
-     * or falls back to {@code "CompilationError"} when no source files are available.
+     * Derives the moduleId from the alphabetically-first source file's class name
+     * (filename without {@code .java} extension), or falls back to
+     * {@code "CompilationError"} when no source files are available.
+     *
+     * <p>Design rationale:
+     * <ul>
+     *   <li>The Rust reporter uses a fixed {@code "compilation"} module id because
+     *       Rust errors are reported per-crate. Java errors are per-file, so a class
+     *       name gives the LLM a more actionable identifier.</li>
+     *   <li>The Go reporter uses the package import path because Go compiles per-package.
+     *       Java's natural unit is the class, so the class name is the analog.</li>
+     *   <li>Alphabetical sort on a {@code Set<File>} (which has no inherent order)
+     *       ensures deterministic output across JVM implementations.</li>
+     * </ul>
      */
     static String extractModuleId(Set<File> sourceFiles) {
         return sourceFiles.stream()
