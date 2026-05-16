@@ -161,7 +161,7 @@ final class TestJsonReader {
      */
     private String extractStringField(String json, String fieldName) {
         Pattern p = Pattern.compile(
-                "\"" + Pattern.quote(fieldName) + "\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+                "\"" + Pattern.quote(fieldName) + "\"\\s*:\\s*\"((?:[^\"\\\\]++|\\\\.)*+)\"");
         Matcher m = p.matcher(json);
         return m.find() ? unescape(m.group(1)) : null;
     }

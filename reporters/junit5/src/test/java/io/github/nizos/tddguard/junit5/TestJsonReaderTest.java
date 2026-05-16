@@ -156,4 +156,26 @@ class TestJsonReaderTest {
 
         assertTrue(parsed.testModules().isEmpty());
     }
+
+
+    @Test
+    void parsesLongErrorMessageWithoutStackOverflow() {
+        StringBuilder longMessage = new StringBuilder();
+        for (int i = 0; i < 150; i++) {
+            if (i > 0) longMessage.append("\n");
+            longMessage.append("    at com.example.Class").append(i)
+                    .append(".method(Class").append(i).append(".java:").append(i + 1).append(")");
+        }
+        String errorMsg = longMessage.toString();
+        TestResult result = new TestResult(List.of(
+                new TestModule("T", List.of(
+                        TestCase.failed("CompilationError", "T::CompilationError",
+                                List.of(new TestError(errorMsg)))
+                ))
+        ), "failed");
+
+        TestResult parsed = reader.parse(writer.serialize(result));
+
+        assertEquals(errorMsg, parsed.testModules().get(0).tests().get(0).errors().get(0).message());
+    }
 }
