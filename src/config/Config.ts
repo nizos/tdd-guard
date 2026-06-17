@@ -23,6 +23,7 @@ export class Config {
   readonly dataDir: string
   readonly useSystemClaude: boolean
   readonly anthropicApiKey: string | undefined
+  readonly anthropicBaseUrl: string | undefined
   readonly modelType: string
   readonly linterType: string | undefined
   readonly modelVersion: string
@@ -34,6 +35,7 @@ export class Config {
     this.dataDir = this.getDataDir(options)
     this.useSystemClaude = this.getUseSystemClaude(options)
     this.anthropicApiKey = this.getAnthropicApiKey(options)
+    this.anthropicBaseUrl = this.getAnthropicBaseUrl(options)
     this.modelType = this.getModelType(options, mode)
     this.linterType = this.getLinterType(options)
     this.modelVersion = this.getModelVersion(options)
@@ -60,6 +62,10 @@ export class Config {
 
   private getAnthropicApiKey(options?: ConfigOptions): string | undefined {
     return options?.anthropicApiKey ?? process.env.TDD_GUARD_ANTHROPIC_API_KEY
+  }
+
+  private getAnthropicBaseUrl(options?: ConfigOptions): string | undefined {
+    return options?.anthropicBaseUrl ?? process.env.TDD_GUARD_ANTHROPIC_BASE_URL
   }
 
   private getModelType(

@@ -44,6 +44,19 @@ Get your API key from [console.anthropic.com](https://console.anthropic.com/)
 - Charges separately from your Claude Code subscription ([pricing](https://www.anthropic.com/pricing))
 - We use `TDD_GUARD_ANTHROPIC_API_KEY` (not `ANTHROPIC_API_KEY`) to prevent accidental charges. If you used the regular `ANTHROPIC_API_KEY`, Claude Code might use it for all your normal coding tasks, charging your API account instead of using your subscription.
 
+## Z.AI (GLM 4.7) API
+
+TDD Guard supports Z.AI's GLM models as drop-in replacements for Anthropic's Claude models. Z.AI provides an Anthropic-compatible API endpoint at significantly lower cost.
+
+```bash
+VALIDATION_CLIENT=api
+TDD_GUARD_ANTHROPIC_API_KEY=your_zai_api_key
+TDD_GUARD_ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic
+TDD_GUARD_MODEL_VERSION=GLM-4.7
+```
+
+For detailed configuration including custom instructions optimized for GLM, see the [GLM Configuration Guide](glm-configuration.md).
+
 ## Model Selection
 
 Configure which Claude model to use for validation (default: `claude-sonnet-4-6`):

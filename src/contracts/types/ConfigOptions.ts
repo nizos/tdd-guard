@@ -5,6 +5,7 @@ export type ConfigOptions = {
   projectRoot?: string
   useSystemClaude?: boolean
   anthropicApiKey?: string
+  anthropicBaseUrl?: string
   modelType?: string
   modelVersion?: string
   linterType?: string

@@ -24,6 +24,11 @@ TDD_GUARD_MODEL_VERSION=claude-sonnet-4-6
 # Get your API key from https://console.anthropic.com/
 TDD_GUARD_ANTHROPIC_API_KEY=your-api-key-here
 
+# Anthropic API Base URL (optional)
+# Use for alternative API providers like Z.AI (GLM models)
+# See docs/validation-model.md for Z.AI configuration
+TDD_GUARD_ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic
+
 # Linter type for refactoring phase support (optional)
 # Options: 'eslint', 'golangci-lint' or unset (no linting)
 # See docs/linting.md for detailed setup and configuration
