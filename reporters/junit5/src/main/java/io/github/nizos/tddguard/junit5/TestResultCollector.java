@@ -19,7 +19,32 @@ import java.util.Map;
  */
 public final class TestResultCollector {
     private final Map<String, List<TestCase>> moduleMap = new LinkedHashMap<>();
+    private int expectedCount = 0;
+    private int recordedCount = 0;
+    private boolean countTrustworthy = true;
     private final List<UnhandledError> unhandledErrors = new ArrayList<>();
+
+    public void setExpectedCount(int count) {
+        this.expectedCount = count;
+    }
+
+    public void incrementExpectedCount() {
+        this.expectedCount++;
+    }
+
+    /**
+     * Marks the expected count as untrustworthy for the rest of this run.
+     *
+     * <p>This is a one-way, sticky flag: once marked untrustworthy the interrupted
+     * comparison is disabled even if more dynamic tests register afterwards.
+     *
+     * <p>Used when a container finishes {@code ABORTED} (e.g. {@code Assumptions.assumeTrue(false)}
+     * in a {@code @BeforeAll}): the platform never fires events for that container's children,
+     * so walking descendants would fabricate outcomes that were never assigned.
+     */
+    public void markCountUntrustworthy() {
+        this.countTrustworthy = false;
+    }
 
     public void recordPassed(String moduleId, String methodName) {
         add(moduleId, TestCase.passed(methodName, fullName(moduleId, methodName)));
@@ -61,12 +86,25 @@ public final class TestResultCollector {
             }
         }
 
-        String reason = anyFailed || !unhandledErrors.isEmpty() ? "failed" : "passed";
+        String reason;
+        if (anyFailed || !unhandledErrors.isEmpty()) {
+            reason = "failed";
+        } else if (countTrustworthy && expectedCount > 0 && recordedCount < expectedCount) {
+            reason = "interrupted";
+        } else {
+            // An empty suite (expectedCount not set) emits "passed", not "interrupted".
+            // This intentionally diverges from rspec, which treats empty runs as interrupted.
+            // Also emits "passed" when countTrustworthy is false (e.g. an aborted container
+            // made the count unreliable), mirroring minitest returning expected_count=0.
+            reason = "passed";
+        }
+
         return new TestResult(modules, reason, List.copyOf(unhandledErrors));
     }
 
     private void add(String moduleId, TestCase testCase) {
         moduleMap.computeIfAbsent(moduleId, key -> new ArrayList<>()).add(testCase);
+        recordedCount++;
     }
 
     private static String fullName(String moduleId, String methodName) {

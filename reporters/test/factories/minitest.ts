@@ -4,11 +4,17 @@ import { join } from 'node:path'
 import type { ReporterConfig, TestScenarios } from '../types'
 import { copyTestArtifacts } from './helpers'
 
-// Use hardcoded absolute path for security when available, fall back to PATH for CI environments
+// Use hardcoded absolute paths to satisfy the no-os-command-from-path lint rule.
+// Checks known locations in priority order: /usr/local/bin first (covers many CI runners
+// and devcontainers); Homebrew next; rbenv shim on macOS developer machines; /usr/bin as
+// the system fallback. Falls back to bare 'bundle' via PATH if none of the paths exist.
 const bundleBinary =
-  ['/usr/local/bin/bundle', '/usr/bin/bundle', '/opt/homebrew/bin/bundle'].find(
-    existsSync
-  ) ?? 'bundle'
+  [
+    '/usr/local/bin/bundle',
+    '/opt/homebrew/bin/bundle',
+    `${process.env.HOME}/.rbenv/shims/bundle`,
+    '/usr/bin/bundle',
+  ].find(existsSync) ?? 'bundle'
 
 export function createMinitestReporter(): ReporterConfig {
   const artifactDir = 'minitest'

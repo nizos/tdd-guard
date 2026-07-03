@@ -11,7 +11,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,8 +51,7 @@ class TestJsonWriterTest {
         TestResult result = new TestResult(List.of(
                 new TestModule("com.example.MyTest", List.of(
                         TestCase.failed("shouldFail", "com.example.MyTest::shouldFail",
-                                List.of(new TestError("expected true but was false")))
-                ))
+                                List.of(new TestError("expected true but was false")))))
         ));
 
         String json = writer.serialize(result);
@@ -67,8 +65,7 @@ class TestJsonWriterTest {
     void serializesSkippedTest() {
         TestResult result = new TestResult(List.of(
                 new TestModule("com.example.MyTest", List.of(
-                        TestCase.skipped("shouldSkip", "com.example.MyTest::shouldSkip")
-                ))
+                        TestCase.skipped("shouldSkip", "com.example.MyTest::shouldSkip")))
         ));
 
         String json = writer.serialize(result);
@@ -79,10 +76,9 @@ class TestJsonWriterTest {
     @Test
     void omitsErrorsFieldForPassedAndSkippedTests() {
         TestResult result = new TestResult(List.of(
-                new TestModule("com.example.MyTest", Arrays.asList(
+                new TestModule("com.example.MyTest", List.of(
                         TestCase.passed("a", "com.example.MyTest::a"),
-                        TestCase.skipped("b", "com.example.MyTest::b")
-                ))
+                        TestCase.skipped("b", "com.example.MyTest::b")))
         ));
 
         String json = writer.serialize(result);
@@ -95,11 +91,9 @@ class TestJsonWriterTest {
         TestResult result = new TestResult(List.of(
                 new TestModule("com.example.FirstTest", List.of(
                         TestCase.passed("a", "com.example.FirstTest::a"),
-                        TestCase.passed("b", "com.example.FirstTest::b")
-                )),
+                        TestCase.passed("b", "com.example.FirstTest::b"))),
                 new TestModule("com.example.SecondTest", List.of(
-                        TestCase.passed("c", "com.example.SecondTest::c")
-                ))
+                        TestCase.passed("c", "com.example.SecondTest::c")))
         ));
 
         String json = writer.serialize(result);
@@ -113,8 +107,7 @@ class TestJsonWriterTest {
         TestResult result = new TestResult(List.of(
                 new TestModule("com.example.MyTest", List.of(
                         TestCase.failed("test", "com.example.MyTest::test",
-                                List.of(new TestError("expected \"foo\" but got \"bar\"")))
-                ))
+                                List.of(new TestError("expected \"foo\" but got \"bar\"")))))
         ));
 
         String json = writer.serialize(result);
@@ -128,8 +121,7 @@ class TestJsonWriterTest {
         TestResult result = new TestResult(List.of(
                 new TestModule("com.example.MyTest", List.of(
                         TestCase.failed("test", "com.example.MyTest::test",
-                                List.of(new TestError("line1\nline2\ttabbed")))
-                ))
+                                List.of(new TestError("line1\nline2\ttabbed")))))
         ));
 
         String json = writer.serialize(result);
@@ -142,8 +134,7 @@ class TestJsonWriterTest {
         TestResult result = new TestResult(List.of(
                 new TestModule("com.example.MyTest", List.of(
                         TestCase.failed("test", "com.example.MyTest::test",
-                                List.of(new TestError("path\\to\\file")))
-                ))
+                                List.of(new TestError("path\\to\\file")))))
         ));
 
         String json = writer.serialize(result);
@@ -155,8 +146,7 @@ class TestJsonWriterTest {
     void writesFileAtomically(@TempDir Path tmp) throws IOException {
         TestResult result = new TestResult(List.of(
                 new TestModule("com.example.MyTest", List.of(
-                        TestCase.passed("a", "com.example.MyTest::a")
-                ))
+                        TestCase.passed("a", "com.example.MyTest::a")))
         ));
 
         writer.write(tmp, result);

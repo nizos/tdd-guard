@@ -31,6 +31,7 @@ public final class TddGuardListener implements TestExecutionListener {
 
     private TestResultCollector collector;
     private Path outputDir;
+    private TestPlan testPlan;
 
     public TddGuardListener() {
         this(new ProjectRootResolver(), new TestJsonWriter(), System::getenv);
@@ -53,6 +54,10 @@ public final class TddGuardListener implements TestExecutionListener {
             Path projectRoot = resolver.resolve(null);
             outputDir = projectRoot.resolve(DATA_SUBPATH);
             collector = new TestResultCollector();
+            if (testPlan != null) {
+                this.testPlan = testPlan;
+                collector.setExpectedCount((int) testPlan.countTestIdentifiers(TestIdentifier::isTest));
+            }
         } catch (IllegalStateException e) {
             System.err.println("[tdd-guard-junit5] disabled: " + e.getMessage());
             collector = null;
@@ -73,6 +78,8 @@ public final class TddGuardListener implements TestExecutionListener {
                     break;
                 case FAILED:
                 case ABORTED:
+                    // ABORTED = individual test aborted (e.g. Assumptions.assumeTrue(false)), not run interruption.
+                    // It is counted in expectedCount and recorded here so recordedCount stays consistent.
                     collector.recordFailed(moduleId, methodName, result.getThrowable().orElse(null));
                     break;
                 default:
@@ -83,14 +90,48 @@ public final class TddGuardListener implements TestExecutionListener {
 
         if (result.getStatus() == TestExecutionResult.Status.FAILED) {
             result.getThrowable().ifPresent(collector::recordUnhandledError);
+        } else if (result.getStatus() == TestExecutionResult.Status.ABORTED) {
+            // An ABORTED container (e.g. Assumptions.assumeTrue(false) in @BeforeAll) means the
+            // platform never fires events for that container's children. Walking descendants to
+            // record them would fabricate outcomes that were never assigned, so we disable the
+            // interrupted comparison for the rest of this run instead — the same approach
+            // minitest takes when it cannot trust its expected count.
+            collector.markCountUntrustworthy();
         }
     }
 
     @Override
     public void executionSkipped(TestIdentifier testIdentifier, String reason) {
+        if (collector == null) return;
+
+        if (testIdentifier.isTest()) {
+            // Single @Disabled method: the platform fires executionSkipped directly on the
+            // test identifier. Record it so recordedCount stays balanced with expectedCount.
+            collector.recordSkipped(moduleId(testIdentifier), methodName(testIdentifier));
+        } else if (testPlan != null) {
+            // Whole @Disabled class: the platform fires executionSkipped on the container
+            // and does NOT descend into its children. The children were counted in
+            // expectedCount at discovery, so we record each one as skipped here to keep
+            // the counts balanced — otherwise a normal run with a disabled class would
+            // falsely report "interrupted".
+            testPlan.getDescendants(testIdentifier).stream()
+                    .filter(TestIdentifier::isTest)
+                    .forEach(child -> collector.recordSkipped(moduleId(child), methodName(child)));
+        }
+    }
+
+    @Override
+    public void dynamicTestRegistered(TestIdentifier testIdentifier) {
         if (collector == null || !testIdentifier.isTest()) return;
 
-        collector.recordSkipped(moduleId(testIdentifier), methodName(testIdentifier));
+        // @TestFactory and (on Jupiter 5.11+) @ParameterizedTest / @RepeatedTest invocations
+        // are not in the up-front TestPlan, so they are missing from the initial expectedCount.
+        // Growing the count here keeps recordedCount from exceeding expectedCount on a
+        // completed dynamic run, which would otherwise hide a missing static test by making
+        // the comparison meaningless.
+        // Note: this does NOT make cut-short dynamic runs detectable — a killed JVM never
+        // reaches testPlanExecutionFinished, so test.json is never written.
+        collector.incrementExpectedCount();
     }
 
     @Override

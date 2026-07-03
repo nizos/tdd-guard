@@ -140,6 +140,42 @@ class TestResultCollectorTest {
     }
 
     @Test
+    void reasonIsInterruptedWhenFewerTestsRecordedThanExpected() {
+        collector.setExpectedCount(3);
+        collector.recordPassed("com.example.MyTest", "a");
+        collector.recordPassed("com.example.MyTest", "b");
+        // only 2 recorded, expected 3
+
+        assertEquals("interrupted", collector.build().reason());
+    }
+
+    @Test
+    void reasonIsFailedTakesPriorityOverInterrupted() {
+        collector.setExpectedCount(3);
+        collector.recordFailed("com.example.MyTest", "a", new RuntimeException("boom"));
+        // 1 recorded, expected 3 — but failed takes priority
+
+        assertEquals("failed", collector.build().reason());
+    }
+
+    @Test
+    void reasonIsPassedWhenExpectedCountMatchesRecorded() {
+        collector.setExpectedCount(2);
+        collector.recordPassed("com.example.MyTest", "a");
+        collector.recordPassed("com.example.MyTest", "b");
+
+        assertEquals("passed", collector.build().reason());
+    }
+
+    @Test
+    void reasonIsPassedWhenExpectedCountIsZero() {
+        collector.setExpectedCount(0);
+        // expectedCount=0 means "no information" — do not emit interrupted
+
+        assertEquals("passed", collector.build().reason());
+    }
+
+    @Test
     void populatesStackFromFirstUserFrame() {
         Throwable t = new RuntimeException("boom");
         t.setStackTrace(new StackTraceElement[] {
@@ -232,5 +268,30 @@ class TestResultCollectorTest {
         collector.recordUnhandledError(new RuntimeException("hook failure"));
 
         assertEquals("failed", collector.build().reason());
+    }
+
+    @Test
+    void reasonIsPassedWhenCountMarkedUntrustworthy() {
+        // An aborted container (e.g. Assumptions.assumeTrue(false) in @BeforeAll) causes
+        // the platform to fire no child events, so recordedCount < expectedCount — but the
+        // count is not a reliable signal. Marking it untrustworthy disables the interrupted
+        // branch so the run reports "passed" instead.
+        collector.setExpectedCount(2);
+        collector.recordPassed("com.example.MyTest", "a");
+        collector.markCountUntrustworthy();
+
+        assertEquals("passed", collector.build().reason());
+    }
+
+    @Test
+    void markCountUntrustworthyIsSticky() {
+        // Once the flag is set, later increments from dynamic test registrations cannot
+        // re-enable the interrupted comparison.
+        collector.setExpectedCount(2);
+        collector.recordPassed("com.example.MyTest", "a");
+        collector.markCountUntrustworthy();
+        collector.incrementExpectedCount(); // simulate a dynamic test registering afterwards
+
+        assertEquals("passed", collector.build().reason());
     }
 }
