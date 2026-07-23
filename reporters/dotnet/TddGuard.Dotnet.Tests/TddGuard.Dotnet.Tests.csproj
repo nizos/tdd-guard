@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FsCheck" Version="3.*" />
+    <PackageReference Include="TUnit" Version="0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../TddGuard.Dotnet/TddGuard.Dotnet.csproj" />
+  </ItemGroup>
+
+  <!-- Register TDD Guard extension hook with MTP's SelfRegisteredExtensions codegen -->
+  <ItemGroup>
+    <TestingPlatformBuilderHook Include="TddGuard.Dotnet">
+      <DisplayName>TddGuard.Dotnet</DisplayName>
+      <TypeFullName>TestingPlatformBuilderHook</TypeFullName>
+    </TestingPlatformBuilderHook>
+  </ItemGroup>
+
+</Project>
