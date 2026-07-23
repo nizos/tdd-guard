@@ -1,0 +1,22 @@
+is_global = true
+
+# Nested types are used intentionally for discriminated unions (TestState, WriteResult)
+dotnet_diagnostic.CA1034.severity = none
+
+# WriteResult.Error naming is intentional for the result type pattern
+dotnet_diagnostic.CA1716.severity = none
+
+# Serialization class name conflict with System.ComponentModel.Design.Serialization is not a real concern
+dotnet_diagnostic.CA1724.severity = none
+
+# TestResultsWriter intentionally catches all exceptions to convert to WriteResult.Error
+dotnet_diagnostic.CA1031.severity = none
+
+# DataTypesConsumed is an MTP interface that requires returning Type[]
+dotnet_diagnostic.CA1819.severity = none
+
+# Nullable reference types make CA1062 redundant; the compiler enforces non-null at call sites
+dotnet_diagnostic.CA1062.severity = none
+
+# ConfigureAwait is unnecessary in app/test code without a SynchronizationContext
+dotnet_diagnostic.CA2007.severity = none

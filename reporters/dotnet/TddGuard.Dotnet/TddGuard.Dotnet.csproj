@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>TddGuard.Dotnet</PackageId>
+    <Version>0.1.0</Version>
+    <Description>TDD Guard test reporter for Microsoft Testing Platform V2</Description>
+    <Authors>Ed Blackburn</Authors>
+    <PackageTags>testing;tdd;test-driven-development;mtp;testing-platform;claude</PackageTags>
+    <RepositoryUrl>https://github.com/nizos/tdd-guard</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Testing.Platform" Version="2.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../TddGuard.Dotnet.Core/TddGuard.Dotnet.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Include MSBuild props for auto-registration in consuming projects -->
+  <ItemGroup>
+    <None Include="buildTransitive/**/*.props" Pack="true" PackagePath="buildTransitive" />
+  </ItemGroup>
+
+</Project>
