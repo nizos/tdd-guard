@@ -13,6 +13,19 @@ export const DEFAULT_MODEL_VERSION = 'claude-sonnet-4-6'
 export const DEFAULT_CLIENT: ClientType = 'sdk'
 export const DEFAULT_DATA_DIR = path.join('.claude', 'tdd-guard', 'data')
 
+/**
+ * Environment variables used as fallbacks when TDD_GUARD_MODEL_VERSION is
+ * not set. This lets the validation model follow the Claude Code session's
+ * own model configuration, which is essential when running against custom
+ * API endpoints (ANTHROPIC_BASE_URL) that do not serve the hardcoded
+ * default model.
+ */
+const MODEL_VERSION_ENV_FALLBACKS = [
+  'ANTHROPIC_DEFAULT_SONNET_MODEL',
+  'ANTHROPIC_MODEL',
+  'ANTHROPIC_SMALL_FAST_MODEL',
+] as const
+
 const VALID_CLIENTS = new Set<string>(['api', 'cli', 'sdk'])
 const MODEL_TYPE_TO_CLIENT: Record<string, ClientType> = {
   anthropic_api: 'api',
@@ -111,11 +124,20 @@ export class Config {
   }
 
   private getModelVersion(options?: ConfigOptions): string {
-    return (
-      options?.modelVersion ??
-      process.env.TDD_GUARD_MODEL_VERSION ??
-      DEFAULT_MODEL_VERSION
-    )
+    if (options?.modelVersion) {
+      return options.modelVersion
+    }
+    const envValue = process.env.TDD_GUARD_MODEL_VERSION
+    if (envValue && envValue.trim() !== '') {
+      return envValue
+    }
+    for (const envName of MODEL_VERSION_ENV_FALLBACKS) {
+      const fallbackValue = process.env[envName]
+      if (fallbackValue && fallbackValue.trim() !== '') {
+        return fallbackValue
+      }
+    }
+    return DEFAULT_MODEL_VERSION
   }
 
   private getValidationClient(options?: ConfigOptions): ClientType {
