@@ -591,6 +591,30 @@ describe('Config', () => {
 
       expect(config.modelVersion).toBe(DEFAULT_MODEL_VERSION)
     })
+
+    test('strips Claude Code context-window suffix from env fallbacks', () => {
+      delete process.env.TDD_GUARD_MODEL_VERSION
+      delete process.env.ANTHROPIC_MODEL
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = 'my-provider/model[1M]'
+
+      const config = new Config()
+
+      expect(config.modelVersion).toBe('my-provider/model')
+    })
+
+    test('strips context-window suffix from TDD_GUARD_MODEL_VERSION', () => {
+      process.env.TDD_GUARD_MODEL_VERSION = 'my-provider/model[200k]'
+
+      const config = new Config()
+
+      expect(config.modelVersion).toBe('my-provider/model')
+    })
+
+    test('strips context-window suffix from options', () => {
+      const config = new Config({ modelVersion: 'my-provider/model[2M]' })
+
+      expect(config.modelVersion).toBe('my-provider/model')
+    })
   })
 
   describe('linterType', () => {

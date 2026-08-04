@@ -26,6 +26,29 @@ const MODEL_VERSION_ENV_FALLBACKS = [
   'ANTHROPIC_SMALL_FAST_MODEL',
 ] as const
 
+/**
+ * Strip context-window suffixes (e.g. "[1M]") that Claude Code appends to
+ * model identifiers in its own env vars. Those suffixes are valid for the
+ * model selector UI but are not part of the model ID sent to the API.
+ * Implemented with indexOf instead of a regex to avoid super-linear
+ * backtracking on untrusted input.
+ */
+function stripModelContextSuffix(model: string): string {
+  const trimmed = model.trim()
+  if (!trimmed.endsWith(']')) {
+    return trimmed
+  }
+  const openBracket = trimmed.lastIndexOf('[', trimmed.length - 2)
+  if (openBracket === -1) {
+    return trimmed
+  }
+  const inner = trimmed.slice(openBracket + 1, trimmed.length - 1)
+  if (/^\d+[kKmM]?$/.test(inner)) {
+    return trimmed.slice(0, openBracket).trimEnd()
+  }
+  return trimmed
+}
+
 const VALID_CLIENTS = new Set<string>(['api', 'cli', 'sdk'])
 const MODEL_TYPE_TO_CLIENT: Record<string, ClientType> = {
   anthropic_api: 'api',
@@ -125,16 +148,16 @@ export class Config {
 
   private getModelVersion(options?: ConfigOptions): string {
     if (options?.modelVersion) {
-      return options.modelVersion
+      return stripModelContextSuffix(options.modelVersion)
     }
     const envValue = process.env.TDD_GUARD_MODEL_VERSION
     if (envValue && envValue.trim() !== '') {
-      return envValue
+      return stripModelContextSuffix(envValue)
     }
     for (const envName of MODEL_VERSION_ENV_FALLBACKS) {
       const fallbackValue = process.env[envName]
       if (fallbackValue && fallbackValue.trim() !== '') {
-        return fallbackValue
+        return stripModelContextSuffix(fallbackValue)
       }
     }
     return DEFAULT_MODEL_VERSION
