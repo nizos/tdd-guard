@@ -11,7 +11,8 @@
       "GO_VERSION": "1.24.0",
       "GOLANGCI_LINT_VERSION": "v2.3.1",
       "RUST_VERSION": "1.94.1",
-      "RUBY_VERSION": "3.3.6"
+      "RUBY_VERSION": "3.3.6",
+      "DOTNET_SDK_VERSION": "10.0.400"
     }
   },
   "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
@@ -27,7 +28,8 @@
         "bmewburn.vscode-intelephense-client",
         "golang.go",
         "Shopify.ruby-lsp",
-        "rust-lang.rust-analyzer"
+        "rust-lang.rust-analyzer",
+        "ms-dotnettools.csharp"
       ],
       "settings": {
         "editor.formatOnSave": true,

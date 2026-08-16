@@ -16,6 +16,7 @@ ARG GIT_DELTA_VERSION=0.18.2
 ARG ZSH_IN_DOCKER_VERSION=1.2.1
 ARG GO_VERSION=1.24.0
 ARG GOLANGCI_LINT_VERSION=v2.3.1
+ARG DOTNET_SDK_VERSION=10.0.400
 
 # Install basic development tools and iptables/ipset
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -173,6 +174,15 @@ RUN chown -R node:node /opt/rust && \
     esac && \
     curl -LsSf "${NEXTEST_URL}" | tar zxf - -C /opt/rust/cargo/bin && \
     chown node:node /opt/rust/cargo/bin/cargo-nextest
+
+# Install .NET SDK for the dotnet reporter
+ENV DOTNET_ROOT=/usr/local/dotnet
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
+ENV DOTNET_NOLOGO=1
+ENV PATH="${DOTNET_ROOT}:${PATH}"
+RUN curl -sSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh -o /tmp/dotnet-install.sh && \
+    bash /tmp/dotnet-install.sh --version ${DOTNET_SDK_VERSION} --install-dir ${DOTNET_ROOT} && \
+    rm /tmp/dotnet-install.sh
 
 RUN ARCH=$(dpkg --print-architecture) && \
   wget "https://github.com/dandavison/delta/releases/download/${GIT_DELTA_VERSION}/git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \

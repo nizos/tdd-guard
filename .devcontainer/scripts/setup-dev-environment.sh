@@ -14,11 +14,12 @@
 # - Rust reporter dependencies
 # - RSpec reporter dependencies
 # - Minitest reporter dependencies
+# - .NET reporter build
 #
 # REQUIREMENTS:
 # - Must be run from the workspace root
 # - Requires sudo access for firewall setup
-# - Node.js, PHP, Python, Go, Rust, and Ruby must be pre-installed
+# - Node.js, PHP, Python, Go, Rust, Ruby, and .NET must be pre-installed
 #
 # EXIT CODES:
 # - 0: Success
@@ -78,7 +79,12 @@ echo ""
 echo "☕ Building JUnit5 reporter..."
 reporters/junit5/gradlew -p reporters/junit5 jar --no-daemon || echo "⚠️  JUnit5 reporter build failed (non-fatal)"
 
-# 10. Install Playwright browsers for Storybook test-runner
+# 10. Build .NET reporter
+echo ""
+echo "🟣 Building .NET reporter..."
+dotnet build reporters/dotnet/TddGuard.Dotnet.Tests/TddGuard.Dotnet.Tests.csproj || echo "⚠️  .NET reporter build failed (non-fatal)"
+
+# 11. Install Playwright browsers for Storybook test-runner
 echo ""
 echo "🎭 Installing Playwright browsers for Storybook test-runner..."
 NODE_OPTIONS="--dns-result-order=ipv4first" npx playwright install chromium --only-shell

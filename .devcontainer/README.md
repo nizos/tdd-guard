@@ -19,6 +19,7 @@ A consistent, isolated environment for developing TDD Guard.
 | Go 1.24            | Go reporter                                     |
 | Rust 1.89          | Rust reporter with cargo-nextest                |
 | Ruby 3.x + Bundler | RSpec reporter                                  |
+| .NET SDK 10        | Dotnet reporter (Microsoft Testing Platform)    |
 | Playwright deps    | Browser automation for Storybook test-runner    |
 | Claude Code        | AI assistance                                   |
 | Dev tools          | Git, zsh, fzf, Docker, gh, vim, nano, git-delta |
