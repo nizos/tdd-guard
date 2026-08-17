@@ -52,9 +52,10 @@ export class GuardManager {
 
   async shouldIgnoreFile(filePath: string): Promise<boolean> {
     const patterns = await this.getIgnorePatterns()
+    const pathToMatch = normalizePathForMatching(filePath)
 
     return patterns.some((pattern) =>
-      minimatch(filePath, pattern, this.minimatchOptions)
+      minimatch(pathToMatch, pattern, this.minimatchOptions)
     )
   }
 
@@ -81,4 +82,23 @@ export class GuardManager {
       return null
     }
   }
+}
+
+/**
+ * Normalize a file path for glob matching:
+ * - Convert backslashes to forward slashes (Windows support)
+ * - Strip the current working directory prefix so user-facing patterns like
+ *   `test` directory patterns match the absolute paths that Claude Code hook
+ *   events report (e.g. /home/user/project/test/hello.py).
+ *
+ * Paths outside the current working directory are left as-is; globstar
+ * patterns still match them.
+ */
+function normalizePathForMatching(filePath: string): string {
+  const forwardPath = filePath.replace(/\\/g, '/')
+  const cwd = process.cwd().replace(/\\/g, '/')
+  if (forwardPath.startsWith(`${cwd}/`)) {
+    return forwardPath.slice(cwd.length + 1)
+  }
+  return forwardPath
 }
