@@ -31,7 +31,7 @@ describe('isTestFile', () => {
 describe('detectLanguage', () => {
   const cases = [
     { path: 'src/calc.ts', expected: 'typescript' },
-    { path: 'src/calc.tsx', expected: 'typescript' },
+    { path: 'src/calc.tsx', expected: 'tsx' },
     { path: 'src/calc.js', expected: 'javascript' },
     { path: 'src/calc.jsx', expected: 'javascript' },
     { path: 'src/calc.py', expected: 'python' },

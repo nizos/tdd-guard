@@ -474,6 +474,28 @@ it('should subtract', () => { expect(subtract(3, 1)).toBe(2) })`,
       expect(sut.validatorHasBeenCalled()).toBe(true)
     })
 
+    it('should call validator when adding multiple tests to a tsx test file', async () => {
+      const multipleTestEdit = {
+        ...EDIT_HOOK_DATA,
+        tool_input: {
+          file_path: 'src/Button.test.tsx',
+          old_string: '',
+          new_string: `it('renders the label', () => {
+  render(<Button label="Save" />)
+  expect(screen.getByText('Save')).toBeTruthy()
+})
+it('renders children', () => {
+  render(<Button label="Save"><span>body</span></Button>)
+  expect(screen.getByText('body')).toBeTruthy()
+})`,
+        },
+      }
+
+      await sut.process(multipleTestEdit)
+
+      expect(sut.validatorHasBeenCalled()).toBe(true)
+    })
+
     it('should call validator for edits to implementation files', async () => {
       const implFileEdit = {
         ...EDIT_HOOK_DATA,
