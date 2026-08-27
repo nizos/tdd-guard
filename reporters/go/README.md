@@ -28,14 +28,18 @@ go test -json ./... 2>&1 | tdd-guard-go
 For projects where tests run in subdirectories, specify the project root:
 
 ```bash
-go test -json ./... 2>&1 | tdd-guard-go -project-root /absolute/path/to/project/root
+go test -json ./... 2>&1 | tdd-guard-go -project-root path/to/project/root
 ```
+
+### Environment Variable
+
+Alternatively, set the `TDD_GUARD_PROJECT_ROOT` environment variable. The CLI flag takes precedence if both are provided.
 
 ### Configuration Rules
 
-- Path must be absolute when using `-project-root` flag
-- Current directory must be within the configured project root
-- Falls back to current directory if not specified
+- Project root must be configured via `-project-root` flag or `TDD_GUARD_PROJECT_ROOT` environment variable
+- Tests must be run from somewhere within the project root directory
+- Relative paths are supported but resolve against the working directory at runtime — if tests may run from different directories, use an absolute path to ensure results are always written to the correct location
 
 ### Makefile Integration
 
@@ -43,7 +47,7 @@ Add to your `Makefile`:
 
 ```makefile
 test:
-	go test -json ./... 2>&1 | tdd-guard-go -project-root /absolute/path/to/project/root
+	go test -json ./... 2>&1 | tdd-guard-go -project-root path/to/project/root
 ```
 
 ## How It Works
