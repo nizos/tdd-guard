@@ -16,6 +16,7 @@ export function isTestFile(filePath: string): boolean {
 
 export type Language =
   | 'typescript'
+  | 'tsx'
   | 'javascript'
   | 'python'
   | 'go'
@@ -25,7 +26,7 @@ export type Language =
 
 const EXTENSION_TO_LANGUAGE: Record<string, Language> = {
   '.ts': 'typescript',
-  '.tsx': 'typescript',
+  '.tsx': 'tsx',
   '.js': 'javascript',
   '.jsx': 'javascript',
   '.py': 'python',

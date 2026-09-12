@@ -55,6 +55,25 @@ describe('countTestDefinitions', () => {
     })
   })
 
+  describe('tsx', () => {
+    it('should count each test in a file that renders JSX', () => {
+      const code = `it('renders the label', () => {
+        render(<Button label="Save" />)
+      })
+      it('renders children', () => {
+        render(<Button label="Save"><span>body</span></Button>)
+      })`
+      expect(countTestDefinitions(code, 'tsx')).toBe(2)
+    })
+
+    it('should count a test that renders a generic component', () => {
+      const code = `it('renders a typed list', () => {
+        render(<List<string> items={['a']} />)
+      })`
+      expect(countTestDefinitions(code, 'tsx')).toBe(1)
+    })
+  })
+
   describe('python', () => {
     it('should count a single pytest function', () => {
       const code = `def test_addition():

@@ -29,6 +29,12 @@ const JS_TEST_PATTERNS = [
   { pattern: 'it.concurrent($$$A)' },
 ]
 
+const JS_LANGS = {
+  javascript: Lang.JavaScript,
+  typescript: Lang.TypeScript,
+  tsx: Lang.Tsx,
+} as const
+
 function countJavaScriptTests(code: string, lang: Lang): number {
   const ast = parse(lang, code)
   const root = ast.root()
@@ -152,10 +158,8 @@ export function countTestDefinitions(code: string, language: Language): number {
   switch (language) {
     case 'javascript':
     case 'typescript':
-      return countJavaScriptTests(
-        code,
-        language === 'typescript' ? Lang.TypeScript : Lang.JavaScript
-      )
+    case 'tsx':
+      return countJavaScriptTests(code, JS_LANGS[language])
     case 'python':
       return countPythonTests(code)
     case 'go':
