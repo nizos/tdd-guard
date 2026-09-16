@@ -18,13 +18,24 @@ export async function validator(
     const prompt = generateDynamicContext(context)
     const response = await modelClient.ask(prompt)
     if (!response) {
-      return block('No response from model, try again')
+      // Fail open: an unresponsive validation model must not block the
+      // user's file operations.
+      return {
+        decision: undefined,
+        reason: 'No response from model, validation skipped',
+      }
     }
     return parseModelResponse(response)
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error'
-    return block(`Error during validation: ${errorMessage}`)
+    // Fail open: validation infrastructure errors (API outages, unsupported
+    // model names, etc.) must not block the user's file operations. The
+    // reason is surfaced so the failure is visible without interrupting work.
+    return {
+      decision: undefined,
+      reason: `Validation skipped: ${errorMessage}`,
+    }
   }
 }
 
