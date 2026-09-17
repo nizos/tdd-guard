@@ -6,21 +6,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// TDD Guard output format
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct TddGuardOutput {
     #[serde(rename = "testModules")]
     pub test_modules: Vec<TestModule>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
-}
-
-impl Default for TddGuardOutput {
-    fn default() -> Self {
-        Self {
-            test_modules: Vec::new(),
-            reason: None,
-        }
-    }
 }
 
 impl TddGuardOutput {
@@ -110,7 +101,6 @@ pub fn transform_events(
 
     // Process test events
     let mut has_test_failure = false;
-    let mut has_test_pass = false;
 
     for event in events {
         if let TestEvent::Test {
@@ -123,10 +113,7 @@ pub fn transform_events(
             let simple_name = event.simple_test_name();
 
             let state = match event_type.as_str() {
-                "ok" => {
-                    has_test_pass = true;
-                    "passed"
-                }
+                "ok" => "passed",
                 "failed" => {
                     has_test_failure = true;
                     "failed"
@@ -153,8 +140,6 @@ pub fn transform_events(
     // Determine overall reason with simple priority
     let reason = if modules.contains_key("compilation") || has_test_failure {
         "failed"
-    } else if has_test_pass || !modules.is_empty() {
-        "passed"
     } else {
         "passed"
     };
@@ -269,7 +254,7 @@ fn extract_assertion_details(message: &str) -> (String, Option<String>, Option<S
         }
 
         let main_message = lines
-            .get(0)
+            .first()
             .map(|s| s.to_string())
             .unwrap_or_else(|| message.to_string());
 
