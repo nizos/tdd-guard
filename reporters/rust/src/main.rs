@@ -23,9 +23,9 @@ use transformer::{transform_events, TddGuardOutput};
     Supports both cargo test and cargo nextest with optional JSON output for detailed reporting."
 )]
 struct Args {
-    /// Absolute path to project root directory
+    /// Path to project root directory
     #[arg(long, value_name = "PATH")]
-    project_root: String,
+    project_root: Option<String>,
 
     /// Pass through mode - read from stdin instead of running tests
     #[arg(long, default_value_t = false)]
@@ -47,30 +47,22 @@ struct Args {
 fn main() -> io::Result<()> {
     let args = Args::parse();
 
-    let project_root = PathBuf::from(&args.project_root);
-    if !project_root.is_absolute() {
-        eprintln!("Error: project-root must be an absolute path");
-        std::process::exit(1);
-    }
+    let exit_code = run(&args, &std::env::current_dir()?)?;
 
-    if !project_root.exists() {
-        eprintln!(
-            "Error: project-root does not exist: {}",
-            project_root.display()
-        );
-        std::process::exit(1);
-    }
+    std::process::exit(exit_code);
+}
+
+fn run(args: &Args, base_dir: &Path) -> io::Result<i32> {
+    let project_root = resolve_project_root(args.project_root.as_deref(), base_dir)?;
 
     let auto_enabled = !args.no_auto_passthrough && env_auto_enabled();
     let use_pass = should_passthrough(args.passthrough, auto_enabled);
 
-    let exit_code = if use_pass {
-        process_passthrough(&project_root)?
+    if use_pass {
+        process_passthrough(&project_root)
     } else {
-        run_and_process(&args, &project_root)?
-    };
-
-    std::process::exit(exit_code);
+        run_and_process(args, &project_root)
+    }
 }
 
 /// Unified function to run tests and process output
@@ -219,6 +211,26 @@ fn process_output(
     Ok(())
 }
 
+fn resolve_project_root(project_root: Option<&str>, base_dir: &Path) -> io::Result<PathBuf> {
+    let env_root = std::env::var("TDD_GUARD_PROJECT_ROOT")
+        .ok()
+        .filter(|s| !s.is_empty());
+    let root_str = project_root
+        .map(|s| s.to_string())
+        .or(env_root)
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "project root must be configured via --project-root flag or TDD_GUARD_PROJECT_ROOT environment variable",
+            )
+        })?;
+    let root = root_str.as_str();
+
+    let p = PathBuf::from(root);
+    let path = if p.is_absolute() { p } else { base_dir.join(p) };
+    path.canonicalize()
+}
+
 /// Save test results to TDD Guard format
 fn save_results(project_root: &Path, output: &TddGuardOutput) -> io::Result<()> {
     let output_dir = project_root.join(".claude").join("tdd-guard").join("data");
@@ -242,7 +254,7 @@ fn detect_runner(preference: &str) -> String {
         "auto" => {
             // Check if nextest is available (cache this in real impl)
             if Command::new("cargo")
-                .args(&["nextest", "--version"])
+                .args(["nextest", "--version"])
                 .output()
                 .map(|output| output.status.success())
                 .unwrap_or(false)
@@ -287,29 +299,101 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
+    fn test_run_accepts_relative_project_root() {
+        let ctx = TestContext::setup().with_sub_dir();
+
+        let args = TestContext::make_args(Some("."));
+        let result = run(&args, &ctx.base_dir);
+
+        assert!(result.is_ok(), "Expected success, got: {:?}", result.err());
+        assert!(TestContext::test_json_path(&ctx.base_dir).exists());
+    }
+
+    #[test]
+    fn test_run_uses_env_var_as_fallback() {
+        let ctx = TestContext::setup();
+
+        std::env::set_var("TDD_GUARD_PROJECT_ROOT", ctx.project_root.to_str().unwrap());
+        let args = TestContext::make_args(None);
+        let result = run(&args, &ctx.project_root);
+        std::env::remove_var("TDD_GUARD_PROJECT_ROOT");
+
+        assert!(
+            result.is_ok(),
+            "Expected success with env var, got: {:?}",
+            result.err()
+        );
+        assert!(TestContext::test_json_path(&ctx.project_root).exists());
+    }
+
+    #[test]
+    fn test_run_errors_when_no_project_root_configured() {
+        let ctx = TestContext::setup();
+
+        let args = TestContext::make_args(None);
+        let result = run(&args, &ctx.project_root);
+
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("project root must be configured"),
+            "Expected error about missing config, got: {}",
+            err
+        );
+    }
+
+    #[test]
+    fn test_resolve_accepts_absolute_path() {
+        let ctx = TestContext::setup();
+        let result =
+            resolve_project_root(Some(ctx.project_root.to_str().unwrap()), &ctx.project_root);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), ctx.project_root.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_resolve_accepts_relative_path() {
+        let ctx = TestContext::setup().with_sub_dir();
+
+        let result = resolve_project_root(Some("."), &ctx.base_dir);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), ctx.base_dir.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_resolve_accepts_path_containing_dotdot() {
+        let ctx = TestContext::setup().with_sub_dir();
+
+        let input = ctx.base_dir.join("..").to_str().unwrap().to_string();
+        let result = resolve_project_root(Some(&input), &ctx.base_dir);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), ctx.project_root.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_resolve_errors_when_none() {
+        let ctx = TestContext::setup();
+
+        let result = resolve_project_root(None, &ctx.project_root);
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn test_save_results() {
-        let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path();
+        let ctx = TestContext::setup();
 
         let output = TddGuardOutput {
             test_modules: vec![],
             reason: Some("passed".to_string()),
         };
 
-        save_results(project_root, &output).unwrap();
+        save_results(&ctx.project_root, &output).unwrap();
 
-        let expected_file = project_root
-            .join(".claude")
-            .join("tdd-guard")
-            .join("data")
-            .join("test.json");
-
-        assert!(expected_file.exists());
-
-        let content = fs::read_to_string(expected_file).unwrap();
-        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
-
-        assert_eq!(parsed["reason"], "passed");
+        assert!(TestContext::test_json_path(&ctx.project_root).exists());
+        assert_eq!(
+            TestContext::read_test_output(&ctx.project_root)["reason"],
+            "passed"
+        );
     }
 
     #[test]
@@ -368,47 +452,24 @@ mod tests {
 
     #[test]
     fn test_process_empty_output() {
-        let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path();
+        let ctx = TestContext::setup();
 
-        process_output(&[], &[], project_root).unwrap();
+        process_output(&[], &[], &ctx.project_root).unwrap();
 
-        let expected_file = project_root
-            .join(".claude")
-            .join("tdd-guard")
-            .join("data")
-            .join("test.json");
-
-        assert!(expected_file.exists());
+        assert!(TestContext::test_json_path(&ctx.project_root).exists());
     }
 
     #[test]
     fn test_process_output_merges_stderr_compilation_errors_when_no_json() {
-        use tempfile::TempDir;
-        let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path();
+        let ctx = TestContext::setup();
 
-        // No JSON events, only stderr with a compilation error
-        let test_lines: Vec<String> = vec![
-            // stdout
-            "running 0 tests".to_string(),
-        ];
-        let stderr_lines: Vec<String> = vec![
-            // stderr from rustc
+        let test_lines = vec!["running 0 tests".to_string()];
+        let stderr_lines = vec![
             "error[E0425]: cannot find value `x` in this scope".to_string(),
             " --> src/lib.rs:2:9".to_string(),
         ];
 
-        super::process_output(&test_lines, &stderr_lines, project_root).unwrap();
-
-        // Verify output file exists and contains a compilation module failed
-        let out = project_root
-            .join(".claude")
-            .join("tdd-guard")
-            .join("data")
-            .join("test.json");
-        let content = std::fs::read_to_string(out).unwrap();
-        let v: serde_json::Value = serde_json::from_str(&content).unwrap();
+        let v = ctx.process_and_read(&test_lines, &stderr_lines);
         assert_eq!(v["reason"], "failed");
         assert!(v["testModules"]
             .as_array()
@@ -420,13 +481,9 @@ mod tests {
     #[test]
     fn test_process_passthrough_partitions_json_and_non_json() {
         use crate::parser::TestEvent;
-        use tempfile::TempDir;
 
-        let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path();
+        let ctx = TestContext::setup();
 
-        // Simulate passthrough partition logic by calling process_output directly with mixed lines.
-        // JSON-like lines need a "type" key to be parsed as events.
         let json_test_event = serde_json::to_string(&TestEvent::Test {
             name: "crate::tests::adds$works".to_string(),
             event: "failed".to_string(),
@@ -435,30 +492,77 @@ mod tests {
         })
         .unwrap();
 
-        let non_json_error = vec![
+        let test_lines = vec![json_test_event];
+        let stderr_lines = vec![
             "error[E0599]: no method named `foo` found for type `u8`".to_string(),
             " --> src/main.rs:10:5".to_string(),
         ];
 
-        let test_lines = vec![json_test_event]; // stdin JSON goes here
-        let stderr_lines = non_json_error; // other lines treated as stderr here
-
-        super::process_output(&test_lines, &stderr_lines, project_root).unwrap();
-
-        let out = project_root
-            .join(".claude")
-            .join("tdd-guard")
-            .join("data")
-            .join("test.json");
-        let content = std::fs::read_to_string(out).unwrap();
-        let v: serde_json::Value = serde_json::from_str(&content).unwrap();
-
-        // Expect both a normal module (crate) and compilation module
+        let v = ctx.process_and_read(&test_lines, &stderr_lines);
         assert_eq!(v["reason"], "failed");
         let modules = v["testModules"].as_array().unwrap();
         assert!(modules
             .iter()
             .any(|m| m["moduleId"].as_str().unwrap().contains("crate")));
         assert!(modules.iter().any(|m| m["moduleId"] == "compilation"));
+    }
+
+    // Test helpers
+
+    struct TestContext {
+        project_root: PathBuf,
+        base_dir: PathBuf,
+        _temp_dir: TempDir,
+    }
+
+    impl TestContext {
+        fn setup() -> Self {
+            let temp_dir = TempDir::new().unwrap();
+            let project_root = temp_dir.path().to_path_buf();
+            let base_dir = project_root.clone();
+            Self {
+                project_root,
+                base_dir,
+                _temp_dir: temp_dir,
+            }
+        }
+
+        fn with_sub_dir(mut self) -> Self {
+            let sub_dir = self.project_root.join("sub");
+            fs::create_dir_all(&sub_dir).unwrap();
+            self.base_dir = sub_dir;
+            self
+        }
+
+        fn test_json_path(root: &Path) -> PathBuf {
+            root.join(".claude")
+                .join("tdd-guard")
+                .join("data")
+                .join("test.json")
+        }
+
+        fn read_test_output(root: &Path) -> serde_json::Value {
+            let content = fs::read_to_string(Self::test_json_path(root)).unwrap();
+            serde_json::from_str(&content).unwrap()
+        }
+
+        fn process_and_read(
+            &self,
+            test_lines: &[String],
+            stderr_lines: &[String],
+        ) -> serde_json::Value {
+            process_output(test_lines, stderr_lines, &self.project_root).unwrap();
+            Self::read_test_output(&self.project_root)
+        }
+
+        fn make_args(project_root: Option<&str>) -> Args {
+            Args {
+                project_root: project_root.map(|s| s.to_string()),
+                passthrough: true,
+                no_auto_passthrough: true,
+                runner: "auto".to_string(),
+                test_args: vec![],
+            }
+        }
     }
 }
