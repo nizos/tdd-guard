@@ -67,7 +67,7 @@
     "@ast-grep/napi": "^0.42.1",
     "dotenv": "^17.2.3",
     "minimatch": "^10.0.3",
-    "zod": "^4.3.6"
+    "zod": "^4.6.6"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -85,7 +85,7 @@
     "@types/node": "^25.1.0",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^10.0.1",
     "eslint-plugin-sonarjs": "^4.0.0",
     "get-port": "^7.1.0",
@@ -96,7 +96,7 @@
     "tdd-guard-vitest": "*",
     "tsx": "^4.22.4",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "overrides": {
     "@anthropic-ai/sdk": "^0.92.0",
