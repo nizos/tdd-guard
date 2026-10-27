@@ -212,45 +212,45 @@ This violates TDD principles as explained in the numbered list above.
     })
   })
 
-  describe('error handling', () => {
-    test('should block when model client throws error', async () => {
+  describe('error handling (fail open)', () => {
+    test('fails open when model client throws error', async () => {
       const { result } = await runValidator(
         new Error('Command failed: claude not found')
       )
 
-      expect(result.decision).toBe('block')
-      expect(result.reason).toContain('Error during validation')
+      expect(result.decision).toBeUndefined()
+      expect(result.reason).toContain('Validation skipped')
       expect(result.reason).toContain('Command failed: claude not found')
     })
 
-    test('should block when model returns invalid JSON', async () => {
+    test('fails open when model returns invalid JSON', async () => {
       const { result } = await runValidator(
         `\`\`\`json\ninvalid json content\n\`\`\``
       )
 
-      expect(result.decision).toBe('block')
-      expect(result.reason).toContain('Error during validation')
+      expect(result.decision).toBeUndefined()
+      expect(result.reason).toContain('Validation skipped')
     })
 
-    test('should provide special message when model returns no response', async () => {
+    test('fails open with specific message when model returns no response', async () => {
       const { result } = await runValidator('')
 
-      expect(result.decision).toBe('block')
-      expect(result.reason).not.toContain('Error during validation')
-      expect(result.reason).toBe('No response from model, try again')
+      expect(result.decision).toBeUndefined()
+      expect(result.reason).toContain('No response from model')
+      expect(result.reason).not.toContain('Validation skipped')
     })
 
     test('surfaces the model response when it is not valid JSON', async () => {
       const { result } = await runValidator('Credit balance too low')
 
-      expect(result.decision).toBe('block')
+      expect(result.decision).toBeUndefined()
       expect(result.reason).toContain('Credit balance too low')
     })
 
-    test('blocks when the response has no usable decision', async () => {
+    test('fails open when the response has no usable decision', async () => {
       const { result } = await runValidator('{"reason": "explanation only"}')
 
-      expect(result.decision).toBe('block')
+      expect(result.decision).toBeUndefined()
       expect(result.reason).toContain('explanation only')
     })
   })
