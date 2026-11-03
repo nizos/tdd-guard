@@ -66,7 +66,7 @@
     "@ast-grep/lang-rust": "^0.0.7",
     "@ast-grep/napi": "^0.42.1",
     "dotenv": "^17.2.3",
-    "minimatch": "^10.0.3",
+    "minimatch": "^11.0.1",
     "zod": "^4.6.6"
   },
   "lint-staged": {
@@ -101,8 +101,12 @@
   "overrides": {
     "@anthropic-ai/sdk": "^0.92.0",
     "uuid": "^14.0.0",
-    "joi": "^17.13.4",
+    "joi": "^17.13.9",
     "esbuild": "^0.28.1",
-    "js-yaml": "^4.2.0"
+    "js-yaml": "^4.2.0",
+    "minimatch": "^11.0.1",
+    "glob": "^14.0.2",
+    "nyc": "^18.0.0",
+    "test-exclude": "^8.0.0"
   }
 }
