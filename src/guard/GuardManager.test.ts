@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { GuardManager } from './GuardManager'
 import { Storage } from '../storage/Storage'
 import { MemoryStorage } from '../storage/MemoryStorage'
@@ -324,6 +324,70 @@ describe('GuardManager', () => {
       expect(
         await guardManager.shouldIgnoreFile('app/views/users/show.html.erb')
       ).toBe(true)
+    })
+
+    describe('absolute paths reported by Claude Code hooks', () => {
+      const originalCwd = process.cwd
+
+      afterEach(() => {
+        process.cwd = originalCwd
+      })
+
+      it('matches directory patterns against paths inside the working directory', async () => {
+        process.cwd = vi
+          .fn()
+          .mockReturnValue('/home/user/project') as typeof process.cwd
+        await setupIgnorePatterns(storage, ['test/**', 'dist/**'])
+
+        expect(
+          await guardManager.shouldIgnoreFile(
+            '/home/user/project/test/hello.py'
+          )
+        ).toBe(true)
+        expect(
+          await guardManager.shouldIgnoreFile(
+            '/home/user/project/dist/assets/app.js'
+          )
+        ).toBe(true)
+        expect(
+          await guardManager.shouldIgnoreFile('/home/user/project/src/hello.py')
+        ).toBe(false)
+      })
+
+      it('matches Windows-style paths with backslashes', async () => {
+        process.cwd = vi
+          .fn()
+          .mockReturnValue('E:\\Desktop') as typeof process.cwd
+        await setupIgnorePatterns(storage, ['test/**'])
+
+        expect(
+          await guardManager.shouldIgnoreFile('E:\\Desktop\\test\\hello.py')
+        ).toBe(true)
+        expect(
+          await guardManager.shouldIgnoreFile('E:\\Desktop\\src\\hello.py')
+        ).toBe(false)
+      })
+
+      it('matches default patterns for absolute paths', async () => {
+        process.cwd = vi
+          .fn()
+          .mockReturnValue('/home/user/project') as typeof process.cwd
+
+        expect(
+          await guardManager.shouldIgnoreFile('/home/user/project/README.md')
+        ).toBe(true)
+      })
+
+      it('still matches ** patterns for paths outside the working directory', async () => {
+        process.cwd = vi
+          .fn()
+          .mockReturnValue('/home/user/project') as typeof process.cwd
+        await setupIgnorePatterns(storage, ['**/test/**'])
+
+        expect(
+          await guardManager.shouldIgnoreFile('/home/user/other/test/a.py')
+        ).toBe(true)
+      })
     })
   })
 })

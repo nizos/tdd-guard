@@ -500,6 +500,15 @@ describe('Config', () => {
   })
 
   describe('modelVersion', () => {
+    // Clear all model-related env vars so tests are hermetic regardless of
+    // the host environment (Claude Code sessions inject ANTHROPIC_* vars).
+    beforeEach(() => {
+      delete process.env.TDD_GUARD_MODEL_VERSION
+      delete process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
+      delete process.env.ANTHROPIC_MODEL
+      delete process.env.ANTHROPIC_SMALL_FAST_MODEL
+    })
+
     test('returns default model version when no configuration provided', () => {
       const config = new Config()
 
@@ -531,6 +540,80 @@ describe('Config', () => {
       const config = new Config()
 
       expect(config.modelVersion).toBe('claude-haiku-3-0')
+    })
+
+    test('falls back to ANTHROPIC_DEFAULT_SONNET_MODEL when TDD_GUARD_MODEL_VERSION is not set', () => {
+      delete process.env.TDD_GUARD_MODEL_VERSION
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = 'my-provider/sonnet'
+
+      const config = new Config()
+
+      expect(config.modelVersion).toBe('my-provider/sonnet')
+    })
+
+    test('falls back to ANTHROPIC_MODEL when other model env vars are not set', () => {
+      delete process.env.TDD_GUARD_MODEL_VERSION
+      delete process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
+      process.env.ANTHROPIC_MODEL = 'my-provider/main'
+
+      const config = new Config()
+
+      expect(config.modelVersion).toBe('my-provider/main')
+    })
+
+    test('falls back to ANTHROPIC_SMALL_FAST_MODEL when only it is set', () => {
+      delete process.env.TDD_GUARD_MODEL_VERSION
+      delete process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
+      delete process.env.ANTHROPIC_MODEL
+      process.env.ANTHROPIC_SMALL_FAST_MODEL = 'my-provider/fast'
+
+      const config = new Config()
+
+      expect(config.modelVersion).toBe('my-provider/fast')
+    })
+
+    test('TDD_GUARD_MODEL_VERSION takes precedence over Claude Code env fallbacks', () => {
+      process.env.TDD_GUARD_MODEL_VERSION = 'my-provider/guard'
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = 'my-provider/sonnet'
+      process.env.ANTHROPIC_MODEL = 'my-provider/main'
+
+      const config = new Config()
+
+      expect(config.modelVersion).toBe('my-provider/guard')
+    })
+
+    test('ignores empty fallback env vars', () => {
+      delete process.env.TDD_GUARD_MODEL_VERSION
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = ''
+      process.env.ANTHROPIC_MODEL = '  '
+
+      const config = new Config()
+
+      expect(config.modelVersion).toBe(DEFAULT_MODEL_VERSION)
+    })
+
+    test('strips Claude Code context-window suffix from env fallbacks', () => {
+      delete process.env.TDD_GUARD_MODEL_VERSION
+      delete process.env.ANTHROPIC_MODEL
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = 'my-provider/model[1M]'
+
+      const config = new Config()
+
+      expect(config.modelVersion).toBe('my-provider/model')
+    })
+
+    test('strips context-window suffix from TDD_GUARD_MODEL_VERSION', () => {
+      process.env.TDD_GUARD_MODEL_VERSION = 'my-provider/model[200k]'
+
+      const config = new Config()
+
+      expect(config.modelVersion).toBe('my-provider/model')
+    })
+
+    test('strips context-window suffix from options', () => {
+      const config = new Config({ modelVersion: 'my-provider/model[2M]' })
+
+      expect(config.modelVersion).toBe('my-provider/model')
     })
   })
 
