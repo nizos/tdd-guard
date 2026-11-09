@@ -22,8 +22,18 @@ func TestProcess(t *testing.T) {
 	})
 
 	t.Run("without project root", func(t *testing.T) {
-		t.Run("creates output file", func(t *testing.T) {
-			runProcess(t, "")
+		t.Run("errors when no project root is configured", func(t *testing.T) {
+			err := runProcess(t, "")
+			assertErrorContains(t, err, "project root must be configured")
+		})
+
+		t.Run("uses TDD_GUARD_PROJECT_ROOT env var as fallback", func(t *testing.T) {
+			t.Setenv("TDD_GUARD_PROJECT_ROOT", tempDir)
+
+			err := runProcess(t, "")
+			if err != nil {
+				t.Fatalf("Expected no error with env var set, got: %v", err)
+			}
 			assertFileExists(t, tempDir)
 		})
 	})
@@ -43,48 +53,70 @@ func TestProcess(t *testing.T) {
 				t.Fatalf("Expected output to contain transformed test state, got: %s", data)
 			}
 		})
+	})
 
-		t.Run("accepts project root equal to current directory", func(t *testing.T) {
+	t.Run("project root resolution", func(t *testing.T) {
+		t.Run("accepts absolute path", func(t *testing.T) {
+			err := runProcess(t, tempDir)
+			if err != nil {
+				t.Fatalf("Expected no error for absolute path, got: %v", err)
+			}
+			assertFileExists(t, tempDir)
+		})
+
+		t.Run("accepts relative path", func(t *testing.T) {
+			subDir := chdirToSubDir(t, tempDir, "reltest")
+
+			err := runProcess(t, ".")
+			if err != nil {
+				t.Fatalf("Expected no error for relative path, got: %v", err)
+			}
+			assertFileExists(t, subDir)
+		})
+
+		t.Run("accepts path containing ..", func(t *testing.T) {
+			subDir := chdirToSubDir(t, tempDir, "dotdot")
+
+			err := runProcess(t, filepath.Join(subDir, ".."))
+			if err != nil {
+				t.Fatalf("Expected no error for path with .., got: %v", err)
+			}
+			assertFileExists(t, tempDir)
+		})
+
+		t.Run("accepts path equal to current directory", func(t *testing.T) {
 			cwd, _ := os.Getwd()
-
 			err := runProcess(t, cwd)
 			if err != nil {
 				t.Fatalf("Expected no error when project root equals cwd, got: %v", err)
 			}
-
 			assertFileExists(t, cwd)
 		})
 
-		t.Run("accepts project root as ancestor of current directory", func(t *testing.T) {
-			// Create a subdirectory and change to it
-			subDir := filepath.Join(tempDir, "subdir")
-			os.MkdirAll(subDir, 0755)
-			oldCwd, _ := os.Getwd()
-			os.Chdir(subDir)
-			defer os.Chdir(oldCwd)
+		t.Run("accepts ancestor of current directory", func(t *testing.T) {
+			chdirToSubDir(t, tempDir, "ancestor")
 
-			// Use tempDir (parent) as project root
 			err := runProcess(t, tempDir)
 			if err != nil {
 				t.Fatalf("Expected no error when project root is ancestor, got: %v", err)
 			}
-
 			assertFileExists(t, tempDir)
 		})
-	})
 
-	t.Run("project root validation", func(t *testing.T) {
-		t.Run("rejects relative project root", func(t *testing.T) {
-			err := runProcess(t, "../relative/path")
-			assertErrorContains(t, err, "project root must be an absolute path")
-		})
-
-		t.Run("rejects project root outside current directory", func(t *testing.T) {
+		t.Run("rejects path outside current directory", func(t *testing.T) {
 			outsideRoot := filepath.Join(filepath.Dir(tempDir), "outside")
 			os.MkdirAll(outsideRoot, 0755)
 
 			err := runProcess(t, outsideRoot)
 			assertErrorContains(t, err, "current directory must be within project root")
+		})
+
+		t.Run("returns error when current directory is unavailable", func(t *testing.T) {
+			subDir := chdirToSubDir(t, tempDir, "doomed")
+			os.RemoveAll(subDir)
+
+			err := runProcess(t, tempDir)
+			assertErrorContains(t, err, "cannot determine current directory")
 		})
 	})
 
@@ -340,9 +372,19 @@ func assertFileExists(t *testing.T, projectRoot string) {
 
 func assertErrorContains(t *testing.T, err error, expected string) {
 	t.Helper()
-	if err == nil || err.Error() != expected {
-		t.Fatalf("Expected error '%s', got: %v", expected, err)
+	if err == nil || !strings.Contains(err.Error(), expected) {
+		t.Fatalf("Expected error containing '%s', got: %v", expected, err)
 	}
+}
+
+func chdirToSubDir(t *testing.T, parent string, name string) string {
+	t.Helper()
+	subDir := filepath.Join(parent, name)
+	os.MkdirAll(subDir, 0755)
+	oldCwd, _ := os.Getwd()
+	os.Chdir(subDir)
+	t.Cleanup(func() { os.Chdir(oldCwd) })
+	return subDir
 }
 
 func getTestFilePath(projectRoot string) string {
