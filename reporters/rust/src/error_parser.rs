@@ -33,12 +33,9 @@ fn strip_ansi_codes(s: &str) -> String {
 /// Parse a buffer of lines to extract compilation errors
 pub fn parse_error_buffer(lines: &[String]) -> Vec<CompilationError> {
     // Preprocess: strip ANSI codes from all lines once
-    let cleaned: Vec<String> = lines
-        .iter()
-        .map(|line| strip_ansi_codes(line))
-        .collect();
+    let cleaned: Vec<String> = lines.iter().map(|line| strip_ansi_codes(line)).collect();
     let lines = &cleaned[..];
-    
+
     let mut errors = Vec::new();
     let mut current_error: Option<CompilationError> = None;
 
@@ -289,16 +286,15 @@ mod tests {
         );
     }
 
-
     #[test]
     fn test_parse_error_with_ansi_colors() {
         let lines = vec![
             "\u{1b}[0m\u{1b}[1m\u{1b}[38;5;9merror[E0432]\u{1b}[0m\u{1b}[0m\u{1b}[1m: unresolved import `non_existent_module`\u{1b}[0m".to_string(),
             "\u{1b}[0m \u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[38;5;12m--> \u{1b}[0m\u{1b}[0msrc/lib.rs:1:5\u{1b}[0m".to_string(),
         ];
-        
+
         let errors = parse_error_buffer(&lines);
-        
+
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].code, Some("E0432".to_string()));
         assert_eq!(errors[0].message, "unresolved import `non_existent_module`");
